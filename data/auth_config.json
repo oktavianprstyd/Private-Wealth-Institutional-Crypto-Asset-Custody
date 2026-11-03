@@ -1,0 +1,7 @@
+{
+  "username": "sentix_executive",
+  "password_hash": "76418c23f16d70a9f9cb2df38b720489f758b62f7da89ca399ab0de5739f1f0a",
+  "salt_hex": "9489381f43bcd3ede1a754073d4421a2",
+  "iterations": 100000,
+  "algorithm": "PBKDF2-HMAC-SHA256"
+}
