@@ -24,7 +24,12 @@ from PIL import Image
 # Core Cryptographic Engines
 from config import BASE_DIR, DATA_DIR, DONGLE_FILENAME, MASTER_FACE_PATH
 from core.auth_3fa import DongleVerifier, BiometricVerifier, PasswordVerifier
-from core.super_encryption import super_encrypt, super_decrypt
+from core.super_encryption import (
+    super_encrypt,
+    super_decrypt,
+    super_encrypt_4stage,
+    super_decrypt_4stage,
+)
 from core.file_cipher import encrypt_file_bytes, decrypt_file_bytes
 from core.database_vault import init_database, insert_secret, get_all_secrets_decrypted, get_raw_database_records, delete_record
 from core.steganography import embed_secret_message, extract_secret_message
@@ -632,66 +637,139 @@ def render_main_dashboard():
     ])
 
     # -----------------------------------------------------------------
-    # TAB 1: SUPER ENKRIPSI TEKS (Vigenere + AES-256-CBC)
+    # TAB 1: SUPER ENKRIPSI TEKS (MULTI-STAGE & COURSEWORK PIPELINE)
     # -----------------------------------------------------------------
     with tab1:
-        st.subheader("Super-Enkripsi Pesan Teks (Vigenère + AES-256-CBC)")
+        st.subheader("Super-Enkripsi Pesan Teks Terpadu")
         st.info("""
-        **Rujukan: Materi 4 (Vigenère Cipher) dan Materi 6/7 (Block Cipher AES):**
-        Pesan teks dienkripsi dua lapis (*Super Encryption*).
-        Lapis 1: Enkripsi klasik **Vigenère Cipher** (ASCII 95) dengan kunci klasik.
-        Lapis 2: Enkripsi modern **AES-256-CBC** dengan padding PKCS7 dan Initial Vector (IV) acak.
+        **Rujukan: Materi 3 (Caesar), Materi 4 (Vigenère), Materi 7 (Vernam Stream), dan Materi 6/7 (Block Cipher AES):**
+        Modul ini mengintegrasikan pipeline super-enkripsi multi-tahap karya tim kuliah (Kelompok 3).
+        Tersedia pilihan antara **Pipeline 4-Tahap Lengkap** (Caesar ➔ Vigenère ➔ Vernam ➔ AES-128) dan **Super Enkripsi 2-Tahap Cepat** (Vigenère + AES-256).
         """)
 
-        col_enc, col_dec = st.columns(2, gap="large")
+        mode_super_pilihan = st.radio(
+            "Pilih Skema Super-Enkripsi:",
+            [
+                "Pipeline 4-Tahap Lengkap (Caesar ➔ Vigenère ➔ Vernam Stream ➔ AES-128)",
+                "Super Enkripsi 2-Tahap Cepat (Vigenère + AES-256-CBC)",
+            ],
+            horizontal=True,
+            key="rad_super_scheme",
+        )
 
-        with col_enc:
-            with st.container(border=True):
-                st.markdown("#### Enkripsi Pesan Baru")
-                plain_input = st.text_area("Plainteks Rahasia (Memo / Seed Phrase):", "TRANSFER 500 ETH TO COLD_VAULT_ALPHA MEMO: URGENT RESERVES", key="se_plain_input")
-                col_k1, col_k2 = st.columns(2)
-                with col_k1:
-                    k_classical = st.text_input("Kunci Vigenère (Klasik):", "UPN2026", key="se_k_classical")
-                with col_k2:
-                    k_modern = st.text_input("Passphrase AES (Modern):", "SentixSuperSecretKey!", key="se_k_modern")
+        if mode_super_pilihan.startswith("Pipeline 4-Tahap"):
+            col_4enc, col_4dec = st.columns(2, gap="large")
 
-                if st.button("Eksekusi Super-Enkripsi", use_container_width=True, key="btn_exec_super_enc"):
-                    if plain_input and k_classical and k_modern:
-                        res = super_encrypt(plain_input, k_classical, k_modern)
-                        st.success("Enkripsi Dua Lapis Berhasil!")
-                        
-                        st.markdown("**Tahap 1 &mdash; Output Klasik (Vigenère):**")
-                        st.code(res["vigenere_output"], language="text")
-                        
-                        st.markdown("**Tahap 2 &mdash; Output Final (AES-256-CBC Base64):**")
-                        st.code(res["final_ciphertext_base64"], language="text")
-                        st.caption(f"IV (Hex): {res['iv_hex']}")
-                    else:
-                        st.error("Lengkapi seluruh kolom teks dan kunci.")
+            with col_4enc:
+                with st.container(border=True):
+                    st.markdown("#### Enkripsi 4-Tahap Terpadu")
+                    st.caption("Pesan diproses berurutan melewati 4 algoritma kriptografi klasik & modern:")
+                    plain_4 = st.text_area("Plainteks Rahasia:", "TRANSFER 500 ETH COLD VAULT", key="sup4_plain_in", height=90)
 
-        with col_dec:
-            with st.container(border=True):
-                st.markdown("#### Dekripsi Pesan Cipher")
-                cipher_input = st.text_area("Cipherteks (Base64 Envelope):", "", key="se_cipher_input")
-                col_dk1, col_dk2 = st.columns(2)
-                with col_dk1:
-                    dk_classical = st.text_input("Kunci Vigenère:", "UPN2026", key="dec_vig_input")
-                with col_dk2:
-                    dk_modern = st.text_input("Passphrase AES:", "SentixSuperSecretKey!", key="dec_aes_input")
+                    col_k_a, col_k_b = st.columns(2)
+                    with col_k_a:
+                        k_c_shift = st.number_input("1. Caesar Shift k (Grace):", min_value=1, max_value=25, value=8, key="k_c_shift_in")
+                        k_v_key = st.text_input("2. Kunci Vigenère (Mirwan):", value="KUNCI", key="k_v_key_in")
+                    with col_k_b:
+                        k_vernam = st.text_input("3. Keystream Vernam (Oktavian):", value="VERNAM", key="k_vernam_in")
+                        k_aes_key = st.text_input("4. Kunci AES-128 (Adhafa):", value="mysecretkey12345", key="k_aes_key_in")
 
-                if st.button("Eksekusi Super-Dekripsi", use_container_width=True, key="btn_exec_super_dec"):
-                    if cipher_input and dk_classical and dk_modern:
-                        try:
-                            dres = super_decrypt(cipher_input.strip(), dk_classical, dk_modern)
-                            st.success("Dekripsi Berhasil!")
-                            st.markdown("**Hasil Dekripsi AES (Plainteks Vigenère):**")
-                            st.code(dres["aes_intermediate"], language="text")
-                            st.markdown("**Plainteks Asli Pulih:**")
-                            st.success(dres["final_plaintext"])
-                        except Exception as e:
-                            st.error(f"Gagal Dekripsi: {e} (Kunci salah atau cipherteks rusak)")
-                    else:
-                        st.error("Masukkan cipherteks dan kedua kunci.")
+                    if st.button("Eksekusi Pipeline 4-Tahap", use_container_width=True, key="btn_exec_4stage_enc"):
+                        if plain_4 and k_v_key and k_vernam and k_aes_key:
+                            try:
+                                res4 = super_encrypt_4stage(plain_4, k_c_shift, k_v_key, k_vernam, k_aes_key)
+                                st.success("Pipeline 4-Tahap Berhasil Dieksekusi!")
+
+                                st.markdown("##### Tabel Transformasi Tiap Tahap:")
+                                st.table(res4["stages"])
+
+                                st.markdown("**Cipherteks Akhir (Base64 Envelope):**")
+                                st.code(res4["final_cipher"], language="text")
+                            except Exception as e:
+                                st.error(f"Gagal enkripsi: {e}")
+                        else:
+                            st.error("Lengkapi seluruh teks dan parameter kunci.")
+
+            with col_4dec:
+                with st.container(border=True):
+                    st.markdown("#### Dekripsi Pembalik 4-Tahap")
+                    st.caption("Pembalikan berurutan: AES-128 Decrypt ➔ Vernam XOR ➔ Vigenère Decrypt ➔ Caesar Decrypt:")
+                    cipher_4_in = st.text_area("Cipherteks Input (Base64):", "", key="sup4_cipher_in", height=90)
+
+                    col_dk_a, col_dk_b = st.columns(2)
+                    with col_dk_a:
+                        dk_c_shift = st.number_input("1. Caesar Shift k:", min_value=1, max_value=25, value=8, key="dk_c_shift_in")
+                        dk_v_key = st.text_input("2. Kunci Vigenère:", value="KUNCI", key="dk_v_key_in")
+                    with col_dk_b:
+                        dk_vernam = st.text_input("3. Keystream Vernam:", value="VERNAM", key="dk_vernam_in")
+                        dk_aes_key = st.text_input("4. Kunci AES-128:", value="mysecretkey12345", key="dk_aes_key_in")
+
+                    if st.button("Eksekusi Pembalik 4-Tahap", use_container_width=True, key="btn_exec_4stage_dec"):
+                        if cipher_4_in and dk_v_key and dk_vernam and dk_aes_key:
+                            try:
+                                dec4 = super_decrypt_4stage(cipher_4_in.strip(), dk_c_shift, dk_v_key, dk_vernam, dk_aes_key)
+                                st.success("Seluruh 4 Tahap Pembalik Berhasil!")
+
+                                st.markdown("##### Alur Pemulihan Tiap Tahap:")
+                                st.table(dec4["stages_dec"])
+
+                                st.markdown("**Plainteks Asli Pulih:**")
+                                st.success(dec4["final_plaintext"])
+                            except Exception as e:
+                                st.error(f"Gagal Dekripsi: {e} (Format tidak valid atau parameter kunci salah)")
+                        else:
+                            st.error("Masukkan cipherteks dan parameter seluruh kunci.")
+
+        else:
+            col_enc, col_dec = st.columns(2, gap="large")
+
+            with col_enc:
+                with st.container(border=True):
+                    st.markdown("#### Enkripsi Pesan Baru (2-Tahap)")
+                    plain_input = st.text_area("Plainteks Rahasia (Memo / Seed Phrase):", "TRANSFER 500 ETH TO COLD_VAULT_ALPHA MEMO: URGENT RESERVES", key="se_plain_input")
+                    col_k1, col_k2 = st.columns(2)
+                    with col_k1:
+                        k_classical = st.text_input("Kunci Vigenère (Klasik):", "UPN2026", key="se_k_classical")
+                    with col_k2:
+                        k_modern = st.text_input("Passphrase AES (Modern):", "SentixSuperSecretKey!", key="se_k_modern")
+
+                    if st.button("Eksekusi Super-Enkripsi", use_container_width=True, key="btn_exec_super_enc"):
+                        if plain_input and k_classical and k_modern:
+                            res = super_encrypt(plain_input, k_classical, k_modern)
+                            st.success("Enkripsi Dua Lapis Berhasil!")
+
+                            st.markdown("**Tahap 1 &mdash; Output Klasik (Vigenère):**")
+                            st.code(res["vigenere_output"], language="text")
+
+                            st.markdown("**Tahap 2 &mdash; Output Final (AES-256-CBC Base64):**")
+                            st.code(res["final_ciphertext_base64"], language="text")
+                            st.caption(f"IV (Hex): {res['iv_hex']}")
+                        else:
+                            st.error("Lengkapi seluruh kolom teks dan kunci.")
+
+            with col_dec:
+                with st.container(border=True):
+                    st.markdown("#### Dekripsi Pesan Cipher (2-Tahap)")
+                    cipher_input = st.text_area("Cipherteks (Base64 Envelope):", "", key="se_cipher_input")
+                    col_dk1, col_dk2 = st.columns(2)
+                    with col_dk1:
+                        dk_classical = st.text_input("Kunci Vigenère:", "UPN2026", key="dec_vig_input")
+                    with col_dk2:
+                        dk_modern = st.text_input("Passphrase AES:", "SentixSuperSecretKey!", key="dec_aes_input")
+
+                    if st.button("Eksekusi Super-Dekripsi", use_container_width=True, key="btn_exec_super_dec"):
+                        if cipher_input and dk_classical and dk_modern:
+                            try:
+                                dres = super_decrypt(cipher_input.strip(), dk_classical, dk_modern)
+                                st.success("Dekripsi Berhasil!")
+                                st.markdown("**Hasil Dekripsi AES (Plainteks Vigenère):**")
+                                st.code(dres["aes_intermediate"], language="text")
+                                st.markdown("**Plainteks Asli Pulih:**")
+                                st.success(dres["final_plaintext"])
+                            except Exception as e:
+                                st.error(f"Gagal Dekripsi: {e} (Kunci salah atau cipherteks rusak)")
+                        else:
+                            st.error("Masukkan cipherteks dan kedua kunci.")
 
     # -----------------------------------------------------------------
     # TAB 2: ENKRIPSI FILE (RC4 Stream Cipher)

@@ -103,6 +103,17 @@ class TestSentixCryptoEngines(unittest.TestCase):
         self.assertEqual(decrypted["final_plaintext"], secret_text)
         self.assertEqual(decrypted["aes_intermediate"], result["vigenere_output"])
 
+    def test_04b_4stage_super_encryption_roundtrip(self):
+        """Test integrated 4-stage pipeline from coursework: Caesar -> Vigenere -> Vernam -> AES."""
+        from core.super_encryption import super_encrypt_4stage, super_decrypt_4stage
+        plain = "BELAJAR KRIPTOGRAFI"
+        res = super_encrypt_4stage(plain, caesar_shift=8, vigenere_key="KUNCI", vernam_key="VERNAM", aes_key="secretkey12345")
+        self.assertIn("final_cipher", res)
+        self.assertEqual(len(res["stages"]), 4)
+
+        dec = super_decrypt_4stage(res["final_cipher"], caesar_shift=8, vigenere_key="KUNCI", vernam_key="VERNAM", aes_key="secretkey12345")
+        self.assertEqual(dec["final_plaintext"], "BELAJARKRIPTOGRAFI")
+
     # -------------------------------------------------------------
     # 3. FILE ENCRYPTION TESTS (RC4 Stream Cipher)
     # -------------------------------------------------------------
