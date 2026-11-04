@@ -113,6 +113,14 @@ sentix-digital-vault/
 
 ## 5. Panduan Menjalankan & Pengujian
 
+### ⚡ Cara Termudah (Windows - 1-Klik Langsung Jalan)
+Cukup **klik dua kali berkas `run_app.bat`**.  
+Skrip ini akan otomatis mendeteksi Python, menyiapkan *virtual environment*, menginstal seluruh modul kriptografi yang diperlukan, dan langsung membuka aplikasi di peramban Anda.
+
+---
+
+### Cara Manual (Terminal / Command Line):
+
 ### Langkah 1: Siapkan Lingkungan Virtual
 ```bash
 python -m venv venv
