@@ -1,0 +1,23 @@
+{
+  "difficulty": 3,
+  "chain": [
+    {
+      "index": 0,
+      "timestamp": 1700000000.0,
+      "transactions": [
+        {
+          "tx_id": "04936d19a492cabb5b86d7f54c13c6882443d9a0945cdc7e1feefce8be5081ce",
+          "sender": "0000_GENESIS_ROOT",
+          "recipient": "SENTIX_SYSTEM_VAULT",
+          "asset": "INITIAL_RESERVE",
+          "amount": 1000000.0,
+          "memo": "Sentix Digital Vault Genesis Ledger Initialization",
+          "timestamp": 1793719142.3274698
+        }
+      ],
+      "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "nonce": 2563,
+      "hash": "0002727fd9f0d6809fdd3ed614ae71b3a2741512f7d86956e97a0ce9cfeeae43"
+    }
+  ]
+}

@@ -1,7 +1,18 @@
 {
   "username": "sentix_executive",
-  "password_hash": "4303827daafd2d233e54da7b6983b4f744bb835bbd0d4dbee2692b4918b197c5",
-  "salt_hex": "342ed946c99f9decdf02f648553954e3",
+  "password_hash": "eaeefb150a1ad51e0c2a077187dc88525eb3be2b9091a6eff4dc002132c285c8",
+  "salt_hex": "12515e7653819dffffe4d4263c409581",
   "iterations": 100000,
-  "algorithm": "PBKDF2-HMAC-SHA256"
+  "algorithm": "PBKDF2-HMAC-SHA256",
+  "accounts": {
+    "oktavian": {
+      "username": "oktavian",
+      "full_name": "Oktavian Prasetya Adi (123240135)",
+      "password_hash": "fc8d690f63515fc5f83ebb582147edcb80c33a84f0ef83ca8ce93234983b27c6",
+      "salt_hex": "f7ef68f97df178c95ec6a26425d8adb4",
+      "iterations": 100000,
+      "algorithm": "PBKDF2-HMAC-SHA256",
+      "registered_at": "2026-11-04 03:48:45 UTC"
+    }
+  }
 }
