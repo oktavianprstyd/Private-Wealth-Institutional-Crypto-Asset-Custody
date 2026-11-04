@@ -1,5 +1,5 @@
-# 🛡️ SENTIX DIGITAL VAULT
-### *Institutional-Grade Multi-Factor Crypto Custody & Secret Asset Manager*
+# SENTIX DIGITAL VAULT
+### Institutional-Grade Multi-Factor Crypto Custody & Secret Asset Manager
 
 > **Tugas Akhir Mata Kuliah Kriptografi**  
 > Program Studi Informatika (PJJ IF-B) — Universitas Pembangunan Nasional "Veteran" Yogyakarta  
@@ -7,19 +7,68 @@
 
 ---
 
-## 📌 1. Latar Belakang & Tema Aplikasi
+## 1. Latar Belakang & Arsitektur Sistem
 
 **Sentix Digital Vault** adalah sistem brankas keamanan aset digital tingkat institusi (*institutional cold-storage custody*) yang dirancang untuk melindungi aset bernilai tinggi, *seed phrase*, dokumen audit rahasia, serta rekaman transaksi terdistribusi.
 
-Aplikasi ini mengintegrasikan seluruh materi kuliah Kriptografi (Materi 1–9) ke dalam skenario dunia nyata (*FinTech & Web3 Security*), mencakup autentikasi multi-faktor berbasis perangkat keras fisik, biometrik fisiologis, super-enkripsi teks, enkripsi berkas berbasis stream, steganografi citra digital, hingga integritas buku besar terdesentralisasi (*blockchain*).
+Aplikasi ini mengintegrasikan seluruh materi kuliah Kriptografi (Materi 1–9) ke dalam skenario dunia nyata (*FinTech & Web3 Security*), mencakup autentikasi multi-faktor berbasis perangkat keras fisik, biometrik fisiologis multi-petugas dengan *Synchronized Screen Flash 2 Detik*, super-enkripsi teks, enkripsi berkas berbasis stream, steganografi citra digital, hingga integritas buku besar terdesentralisasi (*blockchain*).
 
 ---
 
-## 🎯 2. Pemenuhan Spesifikasi Kriteria Tugas Akhir
+## 2. Alur Aplikasi: User Flow vs Developer Flow
+
+Aplikasi membagi alur kerja secara tegas antara pengguna operasional (*User*) dan evaluator akademis (*Developer/Dosen*):
+
+```text
+                                [ SENTIX DIGITAL VAULT ]
+                                           │
+         ┌─────────────────────────────────┼─────────────────────────────────┐
+         ▼                                 ▼                                 ▼
+┌──────────────────┐             ┌──────────────────┐             ┌──────────────────┐
+│  1. USER LOGIN   │             │ 2. USER REGISTER │             │  3. DEV SANDBOX  │
+├──────────────────┤             ├──────────────────┤             ├──────────────────┤
+│ 1. Colok Dongle  │             │ 1. Nama & UserID │             │ 1. Matriks 7     │
+│    USB (HMAC)    │             │                  │             │    Kriteria TA   │
+│ 2. Scan Wajah    │             │ 2. Set Password  │             │ 2. 1-Click Fast  │
+│    (Flash 2s)    │             │    PBKDF2 Hash   │             │    Bypass Demo   │
+│ 3. Master Pwd    │             │ 3. Rekam Wajah   │             │ 3. Inspektur DB  │
+│    (PBKDF2 Key)  │             │    (Flash 2s)    │             │    Cipher SQLite │
+└────────┬─────────┘             │ 4. Unduh Dongle  │             │ 4. Roster Multi  │
+         │                       │    sentix.key    │             │    Face Manager  │
+         ▼                       └────────┬─────────┘             └──────────────────┘
+┌─────────────────────────────────────────┴──────────────────────────────────────────┐
+│                           DASHBOARD UTAMA BRANKAS                                  │
+│ 1. Super-Enkripsi Teks (Vigenère + AES) │ 4. Blockchain Aset Ledger (PoW Mining)   │
+│ 2. File Vault Berkas (Stream RC4)       │ 5. Database Vault Terenkripsi (AES-GCM)  │
+│ 3. Steganografi Citra (Spatial LSB)     │                                          │
+└────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### A. Alur Kerja Pengguna (User Flow)
+1. **Registrasi Akun Baru (Onboarding):**
+   - Masukkan Nama Lengkap dan User ID Petugas.
+   - Tentukan Master Password (di-hash dengan fungsi *Salted PBKDF2-HMAC-SHA256* 100.000 iterasi).
+   - Rekam geometri biometrik wajah menggunakan kamera dengan bantuan **Synchronized Screen Flash 2 Detik** (tombol diletakkan tepat di atas tombol Take Photo).
+   - Terbitkan dan unduh berkas kunci fisik `sentix_dongle.key` yang bertanda tangan HMAC-SHA256 ke flashdisk USB.
+2. **Masuk ke Sistem (3FA Gatekeeper):**
+   - **Faktor 1 (Dongle):** Hubungkan flashdisk USB atau unggah berkas `sentix_dongle.key`.
+   - **Faktor 2 (Biometrik):** Posisikan wajah ke webcam $\rightarrow$ klik tombol flash 2 detik $\rightarrow$ sistem otomatis mencocokkan ke roster wajah resmi.
+   - **Faktor 3 (Password):** Masukkan Master Password $\rightarrow$ sistem menurunkan kunci enkripsi sesi (*Master Session Key*) di RAM.
+3. **Operasi Brankas:** Akses penuh ke 5 modul keamanan digital (Super Enkripsi, File Vault, Stegano LSB, Blockchain Ledger, dan Database Vault).
+
+### B. Alur Pengembang & Sidang Dosen (Developer & Evaluation Flow)
+1. **Matriks Pembuktian Akademis:** Menampilkan tabel pemetaan 7 kriteria tugas akhir langsung terhadap slide silabus perkuliahan (Materi 1–9).
+2. **1-Click Fast Bypass:** Pintasan sekali klik untuk langsung membuka dashboard utama tanpa proses pemindaian berulang saat demonstrasi di depan dosen penguji.
+3. **Inspektur Basis Data Fisik:** Menampilkan isi tabel `vault_records` SQLite dalam bentuk raw ciphertext + nonce + tag untuk membuktikan field penting terenkripsi di harddisk.
+4. **Simulasi Tampering Blockchain:** Uji coba merusak nilai transaksi pada blok yang sudah ditambang untuk membuktikan algoritma deteksi manipulasi otomatis (*tamper alert*).
+
+---
+
+## 3. Pemenuhan Spesifikasi Kriteria Tugas Akhir
 
 | Kriteria di Slide Dosen | Implementasi Teknis di Sentix Vault | Rujukan Materi Kuliah |
 | :--- | :--- | :--- |
-| **1. Login Biometric & Hanya Hidup dengan Bantuan Dongle** | **Faktor 1:** Kunci fisik USB Flashdisk bertanda tangan HMAC-SHA256.<br>**Faktor 2:** Verifikasi biometrik wajah (*Cosine Distance* $\le 0.32$).<br>**Faktor 3:** Master Password. (Aplikasi terkunci total jika dongle/biometrik tidak valid). | Slide Spek & NIST SP 800-63B |
+| **1. Login Biometric & Hanya Hidup dengan Bantuan Dongle** | **Faktor 1:** Kunci fisik USB Flashdisk bertanda tangan HMAC-SHA256.<br>**Faktor 2:** Verifikasi biometrik wajah multi-officer (*Cosine Distance* $\le 0.32$).<br>**Faktor 3:** Master Password. (Aplikasi terkunci total jika dongle/biometrik tidak valid). | Slide Spek & NIST SP 800-63B |
 | **2. Login Menggunakan Algoritma Kriptografi** | Menggunakan algoritma fungsi hash **PBKDF2-HMAC-SHA256** (100.000 iterasi) dengan garam (*salt*) kriptografis 16-byte untuk menghasilkan kunci derivasi master. | **Materi 8:** Algoritma Fungsi Hash Satu-Arah |
 | **3. Pesan Teks Dienkripsi Super Enkripsi (Klasik + Modern)** | **Lapis 1 (Klasik):** Vigenère Cipher (Polialfabetik substitusi ASCII 95).<br>**Lapis 2 (Modern):** AES-256-CBC (*Cipher Block Chaining*) dengan padding PKCS7 dan IV acak. | **Materi 4:** Vigenère Cipher<br>**Materi 6 & 7:** Cipher Blok & AES |
 | **4. Pesan File Dienkripsi Algoritma Beda dari Teks** | Enkripsi berkas biner sembarang (`.pdf`, `.docx`, `.zip`, `.png`) menggunakan **RC4 Stream Cipher** (implementasi byte-level KSA & PRGA). Berbeda fundamental dari AES (Block vs Stream). | **Materi 7:** Contoh Implementasi Stream Cipher (RC4) |
@@ -29,7 +78,7 @@ Aplikasi ini mengintegrasikan seluruh materi kuliah Kriptografi (Materi 1–9) k
 
 ---
 
-## 📂 3. Struktur Direktori Proyek
+## 4. Struktur Direktori Proyek
 
 ```text
 sentix-digital-vault/
@@ -42,7 +91,7 @@ sentix-digital-vault/
 │
 ├── core/                   # Modul mesin kriptografi backend
 │   ├── __init__.py
-│   ├── auth_3fa.py         # Mesin 3FA: Dongle USB, Biometrik Wajah, & PBKDF2
+│   ├── auth_3fa.py         # Mesin 3FA: Dongle USB, Biometrik Multi-Face, & PBKDF2
 │   ├── super_encryption.py # Vigenère Cipher (Klasik) + AES-256-CBC (Modern)
 │   ├── file_cipher.py      # RC4 Stream Cipher (KSA & PRGA) untuk berkas
 │   ├── database_vault.py   # Brankas basis data SQLite + AES-256-GCM
@@ -62,20 +111,14 @@ sentix-digital-vault/
 
 ---
 
-## 🚀 4. Panduan Instalasi & Menjalankan Aplikasi
+## 5. Panduan Menjalankan & Pengujian
 
-### Langkah 1: Klon / Siapkan Lingkungan Virtual
-Pastikan Python 3.10+ telah terpasang di sistem operasi Anda (Windows, Linux, atau macOS).
-
+### Langkah 1: Siapkan Lingkungan Virtual
 ```bash
-# Buat virtual environment
 python -m venv venv
 
-# Aktifkan virtual environment
 # Windows (PowerShell):
 .\venv\Scripts\Activate.ps1
-# Windows (CMD):
-.\venv\Scripts\activate.bat
 # Linux / macOS:
 source venv/bin/activate
 ```
@@ -86,60 +129,13 @@ pip install -r requirements.txt
 ```
 
 ### Langkah 3: Jalankan Automated Test Suite
-Pastikan seluruh 8 pengujian kriptografi lulus 100%:
 ```bash
 python tests/test_crypto_engines.py
 ```
-*Output yang diharapkan: `Ran 8 tests in X.Xs ... OK`*
+*Output: `Ran 8 tests in 0.298s ... OK`*
 
 ### Langkah 4: Jalankan Aplikasi Sentix Vault
 ```bash
 streamlit run app.py
 ```
-Aplikasi akan otomatis terbuka pada browser Anda di alamat: `http://localhost:8501`.
-
----
-
-## 🔑 5. Panduan Penggunaan Fitur 3FA & Login
-
-### Akun & Kredensial Bawaan:
-- **Master Password:** `Sentix@2026!`
-- **Hardware Dongle:**
-  - *Cara 1 (USB Fisik):* Colok flashdisk, jalankan `python scripts/generate_dongle.py --output E:/` (sesuaikan huruf drive USB Anda).
-  - *Cara 2 (Virtual Dongle untuk Pengujian):* Pada layar login, klik tombol **"⚡ Bypass Dongle (Dev Mode)"** atau klik **"Generate Virtual Dongle di Folder Lokal"**.
-- **Biometrik Wajah:**
-  - Arahkan wajah ke webcam lalu klik **"🔍 Cocokkan Biometrik"**, atau gunakan tombol **"⚡ Verifikasi Biometrik (Simulasi Cocok)"** untuk pengujian cepat tanpa webcam.
-
----
-
-## 🐙 6. Panduan Publikasi ke GitHub (Untuk Tim)
-
-Untuk mengunggah proyek ini ke repositori GitHub pribadi/organisasi kelompok:
-
-```bash
-# 1. Inisialisasi Git
-git init
-
-# 2. Tambahkan seluruh berkas
-git add .
-
-# 3. Buat commit pertama
-git commit -m "feat: initial release of Sentix Digital Vault with 3FA and complete cryptographic engines"
-
-# 4. Ganti nama branch utama menjadi main
-git branch -M main
-
-# 5. Hubungkan ke repositori GitHub Anda
-# (Ganti URL di bawah dengan URL repo GitHub yang Anda buat)
-git remote add origin https://github.com/username-anda/sentix-digital-vault.git
-
-# 6. Push kode ke GitHub
-git push -u origin main
-```
-
-Jika Anda menggunakan AI coding agent lokal (seperti Hermes Agent, Cursor, atau Copilot), agen lokal dapat langsung membaca `UI_GUIDE.md` untuk memahami seluruh arsitektur dan melanjutkan perombakan desain secara otomatis.
-
----
-
-## ⚖️ 7. Lisensi & Etika Akademis
-Proyek ini dikembangkan secara orisinal untuk memenuhi syarat Tugas Akhir Mata Kuliah Kriptografi UPN "Veteran" Yogyakarta Tahun Akademik 2026. Seluruh implementasi matematis algoritma dapat dipertanggungjawabkan secara ilmiah di hadapan dosen penguji.
+Buka browser pada alamat: `http://localhost:8501`.
