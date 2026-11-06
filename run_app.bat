@@ -29,10 +29,10 @@ echo [OK] Menggunakan: !PYTHON_VER!
 
 :: 2. Cek apakah ada virtual environment (venv)
 if exist "venv\Scripts\activate.bat" (
-    echo [INFO] Mengaktifkan virtual environment (venv)...
+    echo [INFO] Mengaktifkan virtual environment [venv]...
     call "venv\Scripts\activate.bat"
 ) else (
-    :: Cek apakah streamlit sudah terpasang
+    REM Cek apakah streamlit sudah terpasang
     python -c "import streamlit" >nul 2>&1
     if !errorlevel! neq 0 (
         echo [INFO] Dependensi belum ditemukan. Menyiapkan virtual environment...
