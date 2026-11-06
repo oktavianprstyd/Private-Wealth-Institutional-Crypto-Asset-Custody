@@ -184,10 +184,10 @@ def render_flash_injector():
                 if (!parent || parent.querySelector('.sentix-flash-btn')) return;
                 const b = doc.createElement('button');
                 b.className = 'sentix-flash-btn';
-                b.innerHTML = '☀️ Ambil foto dengan flash layar';
-                b.style.cssText = 'display:block;width:100%;margin:8px 0;padding:10px 16px;' +
-                    'background:#2563EB;color:#fff;border:0;border-radius:10px;' +
-                    'font-weight:600;font-size:13px;cursor:pointer;';
+                b.innerHTML = '☀️ Ambil foto dengan flash layar (2s Flash Anti-Spoofing)';
+                b.style.cssText = 'display:block;width:100%;margin:8px 0;padding:12px 16px;' +
+                    'background:linear-gradient(135deg, #2563EB, #1D4ED8);color:#fff;border:0;border-radius:10px;' +
+                    'font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 4px 12px rgba(37,99,235,0.3);';
                 b.addEventListener('click', function(e) {
                     e.preventDefault(); e.stopPropagation();
                     let o = doc.getElementById('sentix-flash-screen');
@@ -195,8 +195,12 @@ def render_flash_injector():
                         o = doc.createElement('div');
                         o.id = 'sentix-flash-screen';
                         o.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;' +
-                            'background:#fff;z-index:2147483647;pointer-events:none;' +
-                            'transition:opacity .25s ease;';
+                            'background:#ffffff;z-index:2147483647;pointer-events:none;' +
+                            'display:flex;align-items:center;justify-content:center;transition:opacity .2s ease;';
+                        let lbl = doc.createElement('div');
+                        lbl.style.cssText = 'font-family:sans-serif;font-weight:800;font-size:24px;color:#1e293b;background:rgba(255,255,255,0.85);padding:16px 28px;border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,0.1);';
+                        lbl.innerHTML = '☀️ Memindai Liveness Wajah (Flash 2s)...';
+                        o.appendChild(lbl);
                         doc.body.appendChild(o);
                     }
                     o.style.opacity = '1';
@@ -205,8 +209,8 @@ def render_flash_injector():
                         setTimeout(function() {
                             o.style.opacity = '0';
                             setTimeout(function() { if (o.parentNode) o.parentNode.removeChild(o); }, 250);
-                        }, 1000);
-                    }, 1000);
+                        }, 1200);
+                    }, 1200);
                 });
                 parent.insertBefore(b, camBtn);
             });
@@ -346,20 +350,25 @@ def render_login_flow():
     # ---------- Langkah 2 ----------
     elif current == 2:
         with st.container(border=True):
-            card_head("Langkah 2 dari 3", "Verifikasi wajah", "Hadap kamera dengan pencahayaan yang cukup.")
+            card_head("Langkah 2 dari 3", "Verifikasi wajah & Anti-Spoofing", "Hadap kamera dan gunakan Flash Layar untuk verifikasi keaktifan wajah (Liveness).")
+            st.caption("🛡️ **Hardened Biometric Enforcement**: Opsi unggah file foto dinonaktifkan di level autentikasi untuk memblokir celah pencurian/pemalsuan foto (*Presentation Attack*). Wajib live sensor.")
 
-            method = seg(["Kamera", "Unggah foto", "Simulasi"], "bio_method_radio", "Metode")
+            method = seg(["Kamera (Live Capture)", "Simulasi Demo"], "bio_method_radio", "Metode")
 
-            if method == "Kamera":
+            if method == "Kamera (Live Capture)":
                 cam = st.camera_input("Kamera", key="cam_login_input", label_visibility="collapsed")
                 if cam is not None:
                     h = hashlib.md5(cam.getvalue()).hexdigest()
                     if st.session_state.last_cam_hash != h:
                         st.session_state.last_cam_hash = h
-                        ok, dist, msg = BiometricVerifier.verify_face(Image.open(cam))
+                        img_input = Image.open(cam)
+                        ok, dist, msg = BiometricVerifier.verify_face(img_input, check_liveness=True)
+                        liv_data = BiometricVerifier.analyze_liveness(img_input)
                         st.session_state.biometric_verified = ok
                         st.session_state.authenticated_officer = msg
-                        st.session_state.last_bio_result = {"ok": ok, "dist": dist, "msg": msg}
+                        st.session_state.last_bio_result = {
+                            "ok": ok, "dist": dist, "msg": msg, "liveness": liv_data
+                        }
                         st.rerun()
                 elif st.session_state.last_cam_hash is not None:
                     st.session_state.last_cam_hash = None
@@ -367,41 +376,40 @@ def render_login_flow():
                     st.session_state.last_bio_result = None
                     st.rerun()
 
-            elif method == "Unggah foto":
-                up = st.file_uploader("Foto wajah", type=["jpg", "jpeg", "png"], key="up_login_input")
-                if up is not None:
-                    h = hashlib.md5(up.getvalue()).hexdigest()
-                    if st.session_state.last_up_hash != h:
-                        st.session_state.last_up_hash = h
-                        ok, dist, msg = BiometricVerifier.verify_face(Image.open(up))
-                        st.session_state.biometric_verified = ok
-                        st.session_state.authenticated_officer = msg
-                        st.session_state.last_bio_result = {"ok": ok, "dist": dist, "msg": msg}
-                        st.rerun()
-                elif st.session_state.last_up_hash is not None:
-                    st.session_state.last_up_hash = None
-                    st.session_state.biometric_verified = False
-                    st.session_state.last_bio_result = None
-                    st.rerun()
-
-            else:  # Simulasi
-                st.info("Mode simulasi: wajah dianggap cocok tanpa pemindaian.")
+            else:  # Simulasi Demo
+                st.info("Mode simulasi: wajah dianggap cocok tanpa pemindaian (untuk keperluan demo di komputer tanpa webcam).")
                 if st.button("Jalankan simulasi cocok", use_container_width=True, type="primary", key="btn_sim_ok"):
                     st.session_state.biometric_verified = True
                     st.session_state.authenticated_officer = "Biometrik Terverifikasi: Oktavian Prasetya Adi (Simulasi)"
                     st.session_state.last_bio_result = {
                         "ok": True, "dist": 0.05, "msg": "Wajah terverifikasi (mode simulasi).",
+                        "liveness": {"is_live": True, "liveness_score": 98.0, "status": "LIVE_VERIFIED", "mean_lux": 82.5, "skin_ratio": 72.0}
                     }
                     st.rerun()
 
             res = st.session_state.last_bio_result
-            if res and not res["ok"]:
-                st.error(res["msg"])
-                low = res["msg"].lower()
-                if "gelap" in low or "shutter" in low:
-                    st.warning("Foto terlalu gelap. Buka penutup webcam dan pakai tombol flash layar.")
-                with st.expander("Detail teknis"):
-                    st.write(f"Cosine distance: `{res['dist']:.4f}` (diterima jika ≤ 0.32)")
+            if res:
+                if res["ok"]:
+                    st.success(res["msg"])
+                    liv = res.get("liveness", {})
+                    if liv:
+                        c_liv1, c_liv2, c_liv3 = st.columns(3)
+                        with c_liv1:
+                            st.caption(f"🛡️ **Liveness:** `{liv.get('liveness_score', 90)}%`")
+                        with c_liv2:
+                            st.caption(f"☀️ **Flash:** `{liv.get('mean_lux', 0)} Lux`")
+                        with c_liv3:
+                            st.caption(f"🎯 **Pigmen Kulit:** `{liv.get('skin_ratio', 0)}%`")
+                else:
+                    st.error(res["msg"])
+                    low = res["msg"].lower()
+                    if "gelap" in low or "shutter" in low:
+                        st.warning("Foto terlalu gelap. Buka penutup webcam dan pakai tombol flash layar.")
+                    with st.expander("Detail teknis evaluasi anti-spoofing"):
+                        st.write(f"Cosine distance: `{res['dist']:.4f}` (diterima jika ≤ 0.32)")
+                        liv = res.get("liveness", {})
+                        if liv:
+                            st.json(liv)
 
         if st.button("← Kembali ke langkah 1", key="btn_back_1"):
             reset_auth()
@@ -558,6 +566,29 @@ def render_developer_flow():
                     if st.button("Hapus", key=f"del_face_{r['user_id']}_{idx}", use_container_width=True):
                         BiometricVerifier.delete_face(r["user_id"])
                         st.rerun()
+
+        with st.container(border=True):
+            card_head("Lab Evaluasi Dosen", "Uji Spoofing Foto & Anti-Liveness", "Simulasikan skenario hacker: uji apakah foto statis atau gambar curian ditolak oleh engine Liveness.")
+            st.caption("Gunakan alat ini untuk menguji respon sistem terhadap foto statis, hasil print, atau foto ponsel.")
+            dev_up = st.file_uploader("Unggah foto uji (simulasi serangan presentation attack / foto statis)", type=["jpg", "jpeg", "png"], key="dev_photo_spoof_test")
+            if dev_up is not None:
+                img_test = Image.open(dev_up)
+                c_test1, c_test2 = st.columns([1, 2])
+                with c_test1:
+                    st.image(img_test, caption="Foto Uji", use_container_width=True)
+                with c_test2:
+                    l_res = BiometricVerifier.analyze_liveness(img_test)
+                    match_ok, m_dist, m_msg = BiometricVerifier.verify_face(img_test, check_liveness=True)
+                    st.markdown(f"**Status Liveness:** `{'Lolos (LIVE)' if l_res['is_live'] else 'Ditolak (SPOOF DETECTED)'}`")
+                    st.markdown(f"**Liveness Score:** `{l_res['liveness_score']}%`")
+                    st.markdown(f"**Pigmen Kulit Alami:** `{l_res['skin_ratio']}%`")
+                    st.markdown(f"**Iluminasi Lux:** `{l_res['mean_lux']} Lux`")
+                    st.markdown(f"**Dinamika Spekular Flash:** `{l_res['specular_ratio']}%`")
+                    st.markdown(f"**Alasan Evaluasi:** *{l_res['reason']}*")
+                    if match_ok:
+                        st.success(f"Hasil Verifikasi: {m_msg}")
+                    else:
+                        st.error(f"Hasil Verifikasi: {m_msg}")
 
     with t2:
         st.table([

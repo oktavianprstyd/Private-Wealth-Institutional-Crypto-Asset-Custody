@@ -40,3 +40,9 @@ Thumbs.db
 data/sentix_vault.db-journal
 data/*.enc
 data/dongle/*.key
+data/temp_dongle.key
+
+# Biometric Raw Photo Artifacts (Zero Raw Image Persistence - Privacy by Design)
+data/*.jpg
+data/*.jpeg
+data/*.png

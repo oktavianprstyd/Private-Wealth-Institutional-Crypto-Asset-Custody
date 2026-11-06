@@ -30,9 +30,15 @@ class TestSentixCryptoEngines(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.mkdtemp()
         self.test_path = Path(self.test_dir)
+        self.auth_backup = Path("data/auth_config.json").read_bytes() if Path("data/auth_config.json").exists() else None
+        self.face_backup = Path("data/master_face.json").read_bytes() if Path("data/master_face.json").exists() else None
 
     def tearDown(self):
         shutil.rmtree(self.test_dir)
+        if self.auth_backup:
+            Path("data/auth_config.json").write_bytes(self.auth_backup)
+        if self.face_backup:
+            Path("data/master_face.json").write_bytes(self.face_backup)
 
     # -------------------------------------------------------------
     # 1. 3FA AUTHENTICATION TESTS
@@ -70,6 +76,26 @@ class TestSentixCryptoEngines(unittest.TestCase):
         valid_diff, dist_diff, _ = BiometricVerifier.verify_face(img_different)
         self.assertFalse(valid_diff)
         self.assertGreater(dist_diff, 0.32)
+
+    def test_02b_biometric_anti_spoofing_and_privacy(self):
+        """Test anti-spoofing presentation attack detection and zero-raw-storage privacy."""
+        # 1. Zero raw image storage check
+        master_jpg = Path("data/master_face.jpg")
+        probe_jpg = Path("data/last_probe.jpg")
+        self.assertFalse(master_jpg.exists(), "Raw master_face.jpg must NOT be persisted on disk")
+        self.assertFalse(probe_jpg.exists(), "Raw last_probe.jpg must NOT be persisted on disk")
+
+        # 2. Non-human / grayscale / spoof rejection
+        img_spoof = Image.new("RGB", (64, 64), color=(100, 100, 240))  # Unnatural blue hue
+        liv_spoof = BiometricVerifier.analyze_liveness(img_spoof)
+        self.assertFalse(liv_spoof["is_live"])
+        self.assertEqual(liv_spoof["status"], "SPOOF_NON_SKIN")
+
+        # 3. Too dark / shutter closed rejection
+        img_dark = Image.new("RGB", (64, 64), color=(5, 5, 5))
+        liv_dark = BiometricVerifier.analyze_liveness(img_dark)
+        self.assertFalse(liv_dark["is_live"])
+        self.assertEqual(liv_dark["status"], "TOO_DARK")
 
     def test_03_password_hash_and_key_derivation(self):
         """Test PBKDF2-HMAC-SHA256 password verification and session key generation."""
