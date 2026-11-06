@@ -1,9 +1,13 @@
 # SENTIX DIGITAL VAULT
 ### Institutional-Grade Multi-Factor Crypto Custody & Secret Asset Manager
 
-> **Tugas Akhir Mata Kuliah Kriptografi**  
-> Program Studi Informatika (PJJ IF-B) — Universitas Pembangunan Nasional "Veteran" Yogyakarta  
-> **Anggota Pengembang:** Oktavian Prasetya Adi (NIM: 123240135) & Tim
+**Tugas Akhir Mata Kuliah Kriptografi**  
+Program Studi Informatika, Mata Kuliah Kriptografi IF H  
+Universitas Pembangunan Nasional "Veteran" Yogyakarta
+
+**Anggota Pengembang:**  
+1. Oktavian Prasetya Adi (NIM: 123240135)  
+2. Grace Rianty Butar Butar (NIM: 123240036)
 
 ---
 
