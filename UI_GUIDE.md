@@ -95,9 +95,9 @@ Berikut daftar variabel session global yang mengontrol alur UI:
 * **Skema 1 (Pipeline 4-Tahap Coursework):**
   - **Enkripsi:** `super_encrypt_4stage(plaintext, caesar_shift, vigenere_key, vernam_key, aes_key)`
     * Tahap 1: Caesar Cipher (k) — Grace Rianty Butar Butar (123240036)
-    * Tahap 2: Vigenère Cipher (Keyword) — Mirwan Qolyubi (123240116)
+    * Tahap 2: Vigenère Cipher (Keyword) — Grace Rianty Butar Butar (123240036)
     * Tahap 3: Vernam Stream Cipher (Bitwise XOR) — Oktavian Prasetya Adi (123240135)
-    * Tahap 4: AES-128 Block Cipher (CBC) — Adhafa Joan Putranto (123240069)
+    * Tahap 4: AES-128 Block Cipher (CBC) — Oktavian Prasetya Adi (123240135)
   - **Dekripsi:** `super_decrypt_4stage(ciphertext_b64, caesar_shift, vigenere_key, vernam_key, aes_key)`
 * **Skema 2 (Super-Enkripsi 2-Tahap Cepat):**
   - **Enkripsi:** `super_encrypt(plaintext, classical_key, modern_passphrase)`

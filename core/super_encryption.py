@@ -7,9 +7,9 @@ References:
 
 Authors & Responsibilities:
 - Tahap 1 (Caesar): Grace Rianty Butar Butar (123240036)
-- Tahap 2 (Vigenère): Mirwan Qolyubi (123240116)
+- Tahap 2 (Vigenère): Grace Rianty Butar Butar (123240036)
 - Tahap 3 (Vernam): Oktavian Prasetya Adi (123240135)
-- Tahap 4 (AES-128): Adhafa Joan Putranto (123240069)
+- Tahap 4 (AES-128): Oktavian Prasetya Adi (123240135)
 """
 
 import base64
@@ -126,7 +126,7 @@ class CaesarCipher:
 
 # =====================================================================
 # TAHAP 2: VIGENÈRE CIPHER (KLASIK POLIALFABETIK)
-# Penanggung Jawab: Mirwan Qolyubi (123240116)
+# Penanggung Jawab: Grace Rianty Butar Butar (123240036)
 # =====================================================================
 
 class VigenereCipher:
@@ -294,7 +294,7 @@ class VernamCipher:
 
 # =====================================================================
 # TAHAP 4: AES BLOCK CIPHER (MODERN BLOK)
-# Penanggung Jawab: Adhafa Joan Putranto (123240069)
+# Penanggung Jawab: Oktavian Prasetya Adi (123240135)
 # =====================================================================
 
 class AESCBCEngine:
@@ -354,9 +354,9 @@ def super_encrypt_4stage(
 ) -> dict:
     """Integrated 4-Stage Super-Encryption Pipeline from Coursework:
     Tahap 1: Caesar Cipher (Klasik Mono) - Grace Rianty Butar Butar (123240036)
-    Tahap 2: Vigenère Cipher (Klasik Poli) - Mirwan Qolyubi (123240116)
+    Tahap 2: Vigenère Cipher (Klasik Poli) - Grace Rianty Butar Butar (123240036)
     Tahap 3: Vernam Stream Cipher (Modern Aliran) - Oktavian Prasetya Adi (123240135)
-    Tahap 4: AES-128 Block Cipher (Modern Blok) - Adhafa Joan Putranto (123240069)
+    Tahap 4: AES-128 Block Cipher (Modern Blok) - Oktavian Prasetya Adi (123240135)
     """
     # Tahap 1: Caesar
     c_out, c_steps = CaesarCipher.encrypt(plaintext, caesar_shift)
@@ -372,9 +372,9 @@ def super_encrypt_4stage(
 
     stages = [
         {"Tahap": 1, "Algoritma": "Caesar Cipher (Klasik Mono)", "Penanggung Jawab": "Grace Rianty Butar Butar (123240036)", "Hasil Transformasi": str(c_out)},
-        {"Tahap": 2, "Algoritma": "Vigenère Cipher (Klasik Poli)", "Penanggung Jawab": "Mirwan Qolyubi (123240116)", "Hasil Transformasi": str(v_out)},
+        {"Tahap": 2, "Algoritma": "Vigenère Cipher (Klasik Poli)", "Penanggung Jawab": "Grace Rianty Butar Butar (123240036)", "Hasil Transformasi": str(v_out)},
         {"Tahap": 3, "Algoritma": "Vernam Stream Cipher (Modern Aliran)", "Penanggung Jawab": "Oktavian Prasetya Adi (123240135)", "Hasil Transformasi": str(vernam_hex)},
-        {"Tahap": 4, "Algoritma": "AES-128 Block Cipher (Modern Blok)", "Penanggung Jawab": "Adhafa Joan Putranto (123240069)", "Hasil Transformasi": str(aes_b64)},
+        {"Tahap": 4, "Algoritma": "AES-128 Block Cipher (Modern Blok)", "Penanggung Jawab": "Oktavian Prasetya Adi (123240135)", "Hasil Transformasi": str(aes_b64)},
     ]
 
     return {
