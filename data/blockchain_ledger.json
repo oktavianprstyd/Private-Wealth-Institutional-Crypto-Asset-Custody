@@ -18,6 +18,33 @@
       "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
       "nonce": 2563,
       "hash": "0002727fd9f0d6809fdd3ed614ae71b3a2741512f7d86956e97a0ce9cfeeae43"
+    },
+    {
+      "index": 1,
+      "timestamp": 1793987794.939401,
+      "transactions": [
+        {
+          "tx_id": "be1d4c83b3c9e02787f77356a37d2dab109579d8fe59b2504197c90c93ab4ef2",
+          "sender": "COLD_VAULT_01",
+          "recipient": "HOT_RESERVE_ALPHA",
+          "asset": "BTC",
+          "amount": 999999.0,
+          "memo": "Settlement transfer",
+          "timestamp": 1793987793.0470269
+        },
+        {
+          "tx_id": "447e4cefc2785e4d5a982269aabdcd262b9c70248cf4ce3b97008d886e257a51",
+          "sender": "NETWORK_REWARD",
+          "recipient": "SENTIX_AUDIT_NODE",
+          "asset": "SNTX_GAS",
+          "amount": 10.0,
+          "memo": "Block Mining Gas Reward",
+          "timestamp": 1793987794.939401
+        }
+      ],
+      "previous_hash": "0002727fd9f0d6809fdd3ed614ae71b3a2741512f7d86956e97a0ce9cfeeae43",
+      "nonce": 7269,
+      "hash": "000fe397167aa6a4b10d14ae4b23bf1ea55bb421c0f5c8e607b999f4afaf1a49"
     }
   ]
 }

@@ -13,6 +13,7 @@ import tempfile
 import shutil
 from pathlib import Path
 from PIL import Image
+import numpy as np
 
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -96,6 +97,15 @@ class TestSentixCryptoEngines(unittest.TestCase):
         liv_dark = BiometricVerifier.analyze_liveness(img_dark)
         self.assertFalse(liv_dark["is_live"])
         self.assertEqual(liv_dark["status"], "TOO_DARK")
+
+        # 4. Screen Replay bezel detection check
+        arr_screen = np.full((64, 64, 3), 180, dtype=np.uint8)
+        arr_screen[:, :10, :] = 10  # Dark bezel on left
+        arr_screen[:, 54:, :] = 10  # Dark bezel on right
+        img_screen = Image.fromarray(arr_screen)
+        liv_screen = BiometricVerifier.analyze_liveness(img_screen)
+        self.assertFalse(liv_screen["is_live"])
+        self.assertIn("SPOOF", liv_screen["status"])
 
     def test_03_password_hash_and_key_derivation(self):
         """Test PBKDF2-HMAC-SHA256 password verification and session key generation."""

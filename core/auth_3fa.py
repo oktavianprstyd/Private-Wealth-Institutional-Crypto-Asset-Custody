@@ -201,15 +201,26 @@ class BiometricVerifier:
         diff_v = np.abs(gray[1:, :] - gray[:-1, :])
         hf_energy = float(np.mean(diff_h) + np.mean(diff_v))
 
+        # 4. Screen Bezel & Straight Step-Edge Detection (Screen Replay Detection)
+        # Calculates horizontal gradient across columns (detects vertical phone borders)
+        sobel_x = np.abs(gray[:, 2:] - gray[:, :-2]) if gray.shape[1] > 2 else np.zeros((1, 1))
+        col_edge_max = float(np.max(np.mean(sobel_x, axis=0))) if sobel_x.size > 0 else 0.0
+
         # Decision rules
         is_dark = mean_lux < 15.0
         is_overexposed = mean_lux > 240.0
         is_non_skin_spoof = skin_ratio < 0.10
         is_flat_matte = (0.0 < contrast < 6.0) and not is_dark  # Flat uniform surface / matte paper
 
+        # Screen Replay Attack checks (holding a phone / tablet / screen in front of webcam)
+        is_phone_bezel = col_edge_max > 28.0  # Phone screen bezel border
+        is_screen_glare = (contrast > 58.0 and (specular_ratio > 0.18 or skin_ratio < 0.22))
+        is_insufficient_skin = (skin_ratio < 0.18) and not (contrast == 0.0 and skin_ratio > 0.8)
+
         is_live = True
-        reason = "Liveness valid: pantulan flash & pigmen kulit 3D terverifikasi."
+        reason = "Liveness valid: pantulan flash & kontur 3D kulit terverifikasi."
         status = "LIVE_VERIFIED"
+        score = 88.0
 
         if is_dark:
             is_live = False
@@ -226,6 +237,21 @@ class BiometricVerifier:
             reason = "Anti-Spoofing Ditolak: Karakteristik pigmen kulit alami tidak terdeteksi (dugaan cetakan kertas / monokrom)."
             status = "SPOOF_NON_SKIN"
             score = 20.0
+        elif is_phone_bezel:
+            is_live = False
+            reason = "Anti-Spoofing Ditolak: Terdeteksi bingkai bezel layar perangkat digital (Screen Replay Attack terdeteksi)."
+            status = "SPOOF_SCREEN_BEZEL"
+            score = 15.0
+        elif is_screen_glare:
+            is_live = False
+            reason = "Anti-Spoofing Ditolak: Terdeteksi backlight layar ponsel & kontras spektral buatan."
+            status = "SPOOF_SCREEN_GLARE"
+            score = 18.0
+        elif is_insufficient_skin:
+            is_live = False
+            reason = f"Anti-Spoofing Ditolak: Luas proporsi wajah terlalu sempit ({round(skin_ratio*100, 1)}% < 18%). Terdeteksi foto berjarak jauh atau layar ponsel."
+            status = "SPOOF_INSUFFICIENT_COVERAGE"
+            score = 22.0
         elif is_flat_matte:
             is_live = False
             reason = "Anti-Spoofing Ditolak: Citra datar/matte tanpa dinamika pantulan flash wajah."
@@ -244,6 +270,7 @@ class BiometricVerifier:
             "mean_lux": round(mean_lux, 2),
             "skin_ratio": round(skin_ratio * 100, 1),
             "specular_ratio": round(specular_ratio * 100, 2),
+            "bezel_edge": round(col_edge_max, 2),
             "contrast": round(contrast, 2),
             "reason": reason,
         }

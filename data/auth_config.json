@@ -13,6 +13,15 @@
       "iterations": 100000,
       "algorithm": "PBKDF2-HMAC-SHA256",
       "registered_at": "2026-11-04 03:48:45 UTC"
+    },
+    "cobaaja": {
+      "username": "cobaaja",
+      "full_name": "coba2",
+      "password_hash": "dacd42122a652a8c7e55aaa6784cbc59fdd67c732632386fdd6e9f56b0eaa777",
+      "salt_hex": "cccb46b4389df6ac9c1a90d353ad5ffc",
+      "iterations": 100000,
+      "algorithm": "PBKDF2-HMAC-SHA256",
+      "registered_at": "2026-11-06 17:48:10 UTC"
     }
   }
 }
