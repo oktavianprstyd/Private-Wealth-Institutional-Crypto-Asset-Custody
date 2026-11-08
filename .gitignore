@@ -36,11 +36,13 @@ ENV/
 .DS_Store
 Thumbs.db
 
-# Dynamic Vault Run State (Keep template directories, ignore local temp keys)
+# Dynamic Vault Run State (Zero-Raw Storage Enforcement)
 data/sentix_vault.db-journal
 data/*.enc
-data/dongle/*.key
-data/temp_dongle.key
+data/**/*.key
+data/*.key
+data/dongle/
+*.key
 
 # Biometric Raw Photo Artifacts (Zero Raw Image Persistence - Privacy by Design)
 data/*.jpg

@@ -102,20 +102,13 @@ class DongleVerifier:
 
     @classmethod
     def scan_possible_dongle_locations(cls) -> list[Path]:
-        """Scans for potential USB drives or default virtual dongle directories.
-        Robust against empty drives, card readers, and scans D: through Z: plus subfolders.
+        """Scans strictly for external removable USB hardware drives and external mount points.
+        Zero Raw Storage Enforcement: Local project directory (data/) is NEVER scanned,
+        ensuring that 'What You Have' authentication requires actual external hardware.
         """
         candidates = []
 
-        # 1. Default local vault dongle folder
-        default_local = DATA_DIR / "dongle" / DONGLE_FILENAME
-        try:
-            if default_local.exists():
-                candidates.append(default_local)
-        except Exception:
-            pass
-
-        # 2. Windows drive letters (D: through Z:)
+        # 1. Windows removable and external drive letters (D: through Z:)
         import string
         for letter in string.ascii_uppercase[3:]:  # D: to Z:
             try:
@@ -134,7 +127,7 @@ class DongleVerifier:
             except Exception:
                 continue
 
-        # 3. Linux /media, /mnt, /Volumes, and Android OTG (/storage)
+        # 2. Linux /media, /mnt, /Volumes, and Android OTG (/storage)
         for base in ["/media", "/mnt", "/Volumes", "/storage"]:
             try:
                 base_p = Path(base)

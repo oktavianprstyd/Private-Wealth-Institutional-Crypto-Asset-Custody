@@ -566,10 +566,27 @@ def render_developer_flow():
                 st.rerun()
 
         with st.container(border=True):
-            card_head("Dongle Virtual", "Penerbitan Kunci USB Lokal", "Buat file token sentix_dongle.key langsung di folder data/dongle/.")
-            if st.button("Generate Token di data/dongle/", use_container_width=True, key="dev_mk_dongle"):
-                p = DongleVerifier.write_dongle_to_path(DATA_DIR / "dongle")
-                st.success(f"Token kunci USB berhasil dibuat di: {p}")
+            card_head("Kunci USB Hardware", "Penerbitan Token Dongle (Zero-Raw Storage)", "Unduh token kriptografis HMAC-SHA256 langsung ke flashdisk USB fisik Anda. Sistem menerapkan Zero-Raw Storage sehingga tidak pernah menyimpan file kunci mentah di folder data/ laptop.")
+            sample_token = DongleVerifier.generate_dongle_token(
+                vault_id="AEGIS-HSM-DEMO", holder_name="Oktavian Prasetya Adi (123240135)"
+            )
+            st.download_button(
+                f"Unduh Token Kunci USB ({DONGLE_FILENAME})",
+                data=json.dumps(sample_token, indent=2).encode("utf-8"),
+                file_name=DONGLE_FILENAME,
+                mime="application/json",
+                use_container_width=True,
+                key="btn_dev_download_dongle",
+            )
+            if st.button("Bersihkan Sisa File Kunci di Disk (Zero-Storage Audit)", use_container_width=True, key="btn_clean_keys"):
+                cleaned = 0
+                for f in DATA_DIR.glob("**/*.key"):
+                    try:
+                        f.unlink()
+                        cleaned += 1
+                    except Exception:
+                        pass
+                st.success(f"Audit Keamanan: {cleaned} file kunci mentah telah dibersihkan dari disk.")
 
         with st.container(border=True):
             card_head("Basis Data Wajah", "Daftar Petugas Terdaftar")

@@ -86,6 +86,10 @@ class TestSentixCryptoEngines(unittest.TestCase):
         self.assertFalse(master_jpg.exists(), "Raw master_face.jpg must NOT be persisted on disk")
         self.assertFalse(probe_jpg.exists(), "Raw last_probe.jpg must NOT be persisted on disk")
 
+        # Zero raw dongle key storage check (Zero-Raw Storage Enforcement)
+        raw_keys = list(Path("data").glob("**/*.key"))
+        self.assertEqual(len(raw_keys), 0, f"Raw dongle key files must NOT be stored inside data/: {raw_keys}")
+
         # 2. Non-human / grayscale / spoof rejection
         img_spoof = Image.new("RGB", (64, 64), color=(100, 100, 240))  # Unnatural blue hue
         liv_spoof = BiometricVerifier.analyze_liveness(img_spoof)
