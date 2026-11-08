@@ -371,10 +371,10 @@ def super_encrypt_4stage(
     aes_b64, iv_hex = AESCBCEngine.encrypt(vernam_hex, aes_key, key_size=16)
 
     stages = [
-        {"Tahap": 1, "Algoritma": "Caesar Cipher (Klasik Mono)", "Penanggung Jawab": "Grace Rianty Butar Butar (123240036)", "Hasil Transformasi": str(c_out)},
-        {"Tahap": 2, "Algoritma": "Vigenère Cipher (Klasik Poli)", "Penanggung Jawab": "Grace Rianty Butar Butar (123240036)", "Hasil Transformasi": str(v_out)},
-        {"Tahap": 3, "Algoritma": "Vernam Stream Cipher (Modern Aliran)", "Penanggung Jawab": "Oktavian Prasetya Adi (123240135)", "Hasil Transformasi": str(vernam_hex)},
-        {"Tahap": 4, "Algoritma": "AES-128 Block Cipher (Modern Blok)", "Penanggung Jawab": "Oktavian Prasetya Adi (123240135)", "Hasil Transformasi": str(aes_b64)},
+        {"Tahap": 1, "Algoritma": "Caesar Cipher (Klasik Mono)", "Hasil Transformasi": str(c_out)},
+        {"Tahap": 2, "Algoritma": "Vigenère Cipher (Klasik Poli)", "Hasil Transformasi": str(v_out)},
+        {"Tahap": 3, "Algoritma": "Vernam Stream Cipher (Modern Aliran)", "Hasil Transformasi": str(vernam_hex)},
+        {"Tahap": 4, "Algoritma": "AES-128 Block Cipher (Modern Blok)", "Hasil Transformasi": str(aes_b64)},
     ]
 
     return {
