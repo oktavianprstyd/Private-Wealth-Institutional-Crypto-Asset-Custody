@@ -1,36 +1,24 @@
-"""Aegis Cold Custody - Air-Gapped BIP-39 Mnemonic Seed Vault & Hardware Key Custodian
-Integrated Cryptographic Workstation for UPN "Veteran" Yogyakarta Final Project.
+"""Sentix Digital Vault - Streamlit Frontend (desain v3)
+Proyek Akhir Kriptografi, UPN "Veteran" Yogyakarta.
 
-Tim Pengembang (Kelompok 3):
-- Oktavian Prasetya Adi (123240135) - Security Architecture, 3FA Gatekeeper, Modern Ciphers (Vernam XOR, AES, RC4, Blockchain, GCM)
-- Grace Rianty Butar Butar (123240036) - Frontend Mnemonic UX, Classical Ciphers (Caesar & Vigenere)
+Alur:
+1. Masuk      : wizard 3 langkah (Kunci USB -> Wajah -> Password), ada mode simulasi
+2. Registrasi : data akun -> foto wajah -> unduh kunci USB
+3. Developer  : alat uji, kriteria tugas, database mentah
+4. Dashboard  : Pesan, File, Gambar, Aset, Rahasia
 
-Arsitektur & Alur Sistem:
-1. Alur Pengguna (User Flow):
-   - Masuk (3FA Gatekeeper: Hardware Key USB HMAC-SHA256 + Biometrik Wajah 128-D + Password PBKDF2)
-   - Registrasi Akun Petugas Baru (Nama, Password Hash PBKDF2, Perekaman Wajah, Unduh Kunci Dongle)
-   - Dashboard Cold Custody:
-     * Tab 1: BIP-39 Mnemonic Seed Phrase Armor (Super-Enkripsi 4-Tahap: Caesar -> Vigenere -> Vernam -> AES-128)
-     * Tab 2: Keystore & Private Key Vault (Stream Cipher RC4)
-     * Tab 3: Stego Paper Wallet & NFT Camouflage (Spatial LSB + PSNR/MSE)
-     * Tab 4: Cold Wallet On-Chain Transaction Ledger (PoW Blockchain SHA-256 + Tamper Alert)
-     * Tab 5: Whitelisted Address Book & UTXO Database (SQLite + AES-256-GCM AEAD)
-2. Alur Pengembang (Developer Flow):
-   - Sandbox Evaluasi Dosen (Matriks 7 Kriteria Kriptografi)
-   - 1-Click Fast Testing Bypass (Mode Sandbox Terisolasi - Akses Data Riil Diblokir)
-   - Inspektur Basis Data SQLite Fisik (Raw Ciphertext On-Disk)
+Letakkan juga config.toml di folder .streamlit/ (tema warna biru).
 """
 
 import streamlit as st
+import streamlit.components.v1 as components
 import time
 import json
 import hashlib
-from pathlib import Path
 from io import BytesIO
 from PIL import Image
 
-# Core Cryptographic Engines
-from config import BASE_DIR, DATA_DIR, DONGLE_FILENAME, MASTER_FACE_PATH
+from config import DATA_DIR
 from core.auth_3fa import DongleVerifier, BiometricVerifier, PasswordVerifier
 from core.super_encryption import (
     super_encrypt,
@@ -49,958 +37,917 @@ from core.database_vault import (
 from core.steganography import embed_secret_message, extract_secret_message
 from core.blockchain import Blockchain
 
-# Streamlit Page Configuration
 st.set_page_config(
-    page_title="Aegis Cold Custody | Air-Gapped Seed Vault",
-    page_icon="🛡️",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="Sentix Digital Vault",
+    page_icon="🔐",
+    layout="centered",
+    initial_sidebar_state="collapsed",
 )
 
-# Custom Institutional Cold Wallet Dark Theme CSS
+# =====================================================================
+# STYLE
+# =====================================================================
 st.markdown("""
 <style>
-    .stApp {
-        background-color: #0B0F19;
-        color: #E2E8F0;
+    :root {
+        --bg:#0B0F17; --card:#121824; --card2:#0F1520; --line:#222C3E;
+        --text:#E6EAF2; --muted:#8B97AB; --accent:#3B82F6; --accent2:#2563EB;
+        --ok:#34D399; --okbg:#06382B; --warn:#FBBF24; --warnbg:#3A2A08;
     }
-    .badge-pill {
-        display: inline-block;
-        padding: 4px 12px;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.05em;
-        border-radius: 9999px;
-        text-transform: uppercase;
-        margin-right: 6px;
+    .stApp { background:var(--bg); color:var(--text); }
+
+    /* bersihkan chrome bawaan Streamlit */
+    #MainMenu, footer, [data-testid="stToolbar"], [data-testid="stDecoration"] { display:none !important; }
+    [data-testid="stHeader"] { background:transparent; height:0; }
+
+    .block-container { max-width:760px; padding-top:3rem; padding-bottom:5rem; padding-left:1.5rem; padding-right:1.5rem; }
+    [data-testid="stVerticalBlock"] { gap:1.5rem; }
+    [data-testid="stHorizontalBlock"] { gap:1.25rem; }
+    div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stVerticalBlock"] { gap:1.1rem; }
+
+    /* iframe flash (tinggi 0) tidak boleh memakan ruang */
+    [data-testid="stElementContainer"]:has(iframe[height="0"]),
+    [data-testid="element-container"]:has(iframe[height="0"]) { display:none !important; }
+
+    /* tipografi */
+    h1,h2,h3,h4 { letter-spacing:-0.02em; margin:0 !important; padding:0 !important; }
+    p { margin:0; }
+    .muted { color:var(--muted); font-size:.92rem; line-height:1.5; }
+    .center { text-align:center; }
+    .eyebrow { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:700; }
+    .ctitle { font-size:1.3rem; font-weight:700; margin:6px 0 6px 0; }
+
+    /* menu atas: rata tengah */
+    .st-key-top_flow_nav,
+    .st-key-top_flow_nav > div,
+    .st-key-top_flow_nav [data-testid="stButtonGroup"],
+    .st-key-top_flow_nav div[role="radiogroup"] {
+        display:flex !important; justify-content:center !important; width:100%;
     }
-    .badge-success {
-        background-color: #064E3B;
-        color: #34D399;
-        border: 1px solid #059669;
+
+    /* pilihan aktif pada segmented control: biru */
+    [data-testid="stBaseButton-segmented_controlActive"] {
+        background:rgba(59,130,246,.18) !important;
+        border-color:#3B82F6 !important;
+        color:#93C5FD !important;
     }
-    .badge-warning {
-        background-color: #78350F;
-        color: #FBBF24;
-        border: 1px solid #D97706;
+
+    /* hero */
+    .hero { text-align:center; padding:8px 0 16px 0; }
+    .hero .logo {
+        width:56px; height:56px; margin:0 auto 14px auto; border-radius:16px;
+        display:flex; align-items:center; justify-content:center; font-size:28px;
+        background:linear-gradient(135deg,#1D4ED8,#3B82F6); box-shadow:0 8px 24px rgba(37,99,235,.35);
     }
-    .badge-danger {
-        background-color: #7F1D1D;
-        color: #F87171;
-        border: 1px solid #DC2626;
+    .hero h1 { font-size:1.9rem; font-weight:800; line-height:1.2; }
+    .hero p  { color:var(--muted); margin-top:6px; font-size:.95rem; }
+
+    /* kartu */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        background:var(--card); border:1px solid var(--line) !important;
+        border-radius:16px !important; padding:1.25rem 1.25rem;
     }
-    .badge-info {
-        background-color: #1E293B;
-        color: #94A3B8;
-        border: 1px solid #334155;
+    div[data-testid="stVerticalBlockBorderWrapper"] div[data-testid="stVerticalBlockBorderWrapper"] {
+        background:var(--card2); border-radius:12px !important;
     }
-    .badge-hsm {
-        background-color: #312E81;
-        color: #A5B4FC;
-        border: 1px solid #6366F1;
+
+    /* tombol */
+    .stButton > button, .stDownloadButton > button {
+        border-radius:10px; min-height:44px; font-weight:600; transition:all .15s ease;
     }
-    .flow-card {
-        background-color: #111827;
-        border: 1px solid #1F2937;
-        border-radius: 8px;
-        padding: 16px;
-        margin-bottom: 12px;
+    button[kind="primary"] { background:var(--accent2); border:0; color:#fff; }
+    button[kind="primary"]:hover { background:var(--accent); }
+    button[kind="secondary"] { background:#182131; border:1px solid var(--line); color:var(--text); }
+    button[kind="secondary"]:hover { border-color:var(--accent); color:#fff; }
+
+    /* input */
+    div[data-baseweb="input"], div[data-baseweb="textarea"], div[data-baseweb="select"] > div {
+        background:var(--card2) !important; border-radius:10px !important;
     }
+    label p { font-size:.85rem !important; color:var(--muted) !important; }
+
+    /* tab */
+    div[data-baseweb="tab-list"] { gap:6px; border-bottom:1px solid var(--line); }
+    button[data-baseweb="tab"] { font-weight:600; padding:10px 14px; }
+
+    /* tabel */
+    [data-testid="stTable"] table { width:100%; border-collapse:collapse; }
+    [data-testid="stTable"] th { background:#182131; color:var(--muted); text-align:left; font-size:.8rem; text-transform:uppercase; letter-spacing:.06em; }
+    [data-testid="stTable"] td, [data-testid="stTable"] th { padding:10px 12px; border-color:var(--line); }
+
+    /* metrik */
+    [data-testid="stMetric"] { background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+
+    /* pill */
+    .pill { display:inline-block; padding:4px 12px; font-size:12px; font-weight:650; border-radius:999px; }
+    .pill.ok   { background:var(--okbg); color:var(--ok); border:1px solid #0B7A5A; }
+    .pill.wait { background:#182131; color:var(--muted); border:1px solid var(--line); }
+    .pill.warn { background:var(--warnbg); color:var(--warn); border:1px solid #8A6414; }
+
+    /* stepper */
+    .stepper { display:flex; align-items:center; justify-content:center; padding:10px 0 6px 0; }
+    .step { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:var(--muted); white-space:nowrap; }
+    .step .dot {
+        width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+        font-size:12px; background:#182131; border:1px solid var(--line);
+    }
+    .step.now  { color:var(--text); }
+    .step.now .dot  { background:var(--accent2); border-color:var(--accent); color:#fff; box-shadow:0 0 0 4px rgba(59,130,246,.18); }
+    .step.done { color:var(--text); }
+    .step.done .dot { background:var(--okbg); border-color:#0B7A5A; color:var(--ok); }
+    .stepper .line { flex:0 0 36px; height:2px; background:var(--line); margin:0 12px; }
+    .stepper .line.done { background:#0B7A5A; }
+
+    /* bar dashboard */
+    .brand { display:flex; align-items:center; gap:12px; }
+    .brand .logo {
+        width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+        font-size:20px; background:linear-gradient(135deg,#1D4ED8,#3B82F6);
+    }
+    .brand .name { font-weight:800; font-size:1.1rem; line-height:1.2; }
 </style>
 """, unsafe_allow_html=True)
 
 
-# Initialize Session State
-if "dongle_verified" not in st.session_state:
-    st.session_state.dongle_verified = False
-if "biometric_verified" not in st.session_state:
-    st.session_state.biometric_verified = False
-if "authenticated_officer" not in st.session_state:
-    st.session_state.authenticated_officer = "N/A"
-if "password_verified" not in st.session_state:
-    st.session_state.password_verified = False
-if "master_session_key" not in st.session_state:
-    st.session_state.master_session_key = None
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-if "is_dev_mode" not in st.session_state:
-    st.session_state.is_dev_mode = False
+# =====================================================================
+# FLASH LAYAR UNTUK KAMERA
+# =====================================================================
+def render_flash_injector():
+    components.html("""
+    <script>
+    (function() {
+        const doc = window.parent.document;
+        if (!doc) return;
+        function inject() {
+            doc.querySelectorAll('[data-testid="stCameraInputButton"]').forEach(function(camBtn) {
+                const parent = camBtn.parentElement;
+                if (!parent || parent.querySelector('.sentix-flash-btn')) return;
+                const b = doc.createElement('button');
+                b.className = 'sentix-flash-btn';
+                b.innerHTML = '☀️ Ambil foto dengan flash layar (2s Flash Anti-Spoofing)';
+                b.style.cssText = 'display:block;width:100%;margin:8px 0;padding:12px 16px;' +
+                    'background:linear-gradient(135deg, #2563EB, #1D4ED8);color:#fff;border:0;border-radius:10px;' +
+                    'font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 4px 12px rgba(37,99,235,0.3);';
+                b.addEventListener('click', function(e) {
+                    e.preventDefault(); e.stopPropagation();
+                    let o = doc.getElementById('sentix-flash-screen');
+                    if (!o) {
+                        o = doc.createElement('div');
+                        o.id = 'sentix-flash-screen';
+                        o.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;' +
+                            'background:#ffffff;z-index:2147483647;pointer-events:none;' +
+                            'display:flex;align-items:center;justify-content:center;transition:opacity .2s ease;';
+                        let lbl = doc.createElement('div');
+                        lbl.style.cssText = 'font-family:sans-serif;font-weight:800;font-size:24px;color:#1e293b;background:rgba(255,255,255,0.85);padding:16px 28px;border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,0.1);';
+                        lbl.innerHTML = '☀️ Memindai Liveness Wajah (Flash 2s)...';
+                        o.appendChild(lbl);
+                        doc.body.appendChild(o);
+                    }
+                    o.style.opacity = '1';
+                    setTimeout(function() {
+                        camBtn.click();
+                        setTimeout(function() {
+                            o.style.opacity = '0';
+                            setTimeout(function() { if (o.parentNode) o.parentNode.removeChild(o); }, 250);
+                        }, 1200);
+                    }, 1200);
+                });
+                parent.insertBefore(b, camBtn);
+            });
+        }
+        inject();
+        if (!window.__sentixFlashInterval) {
+            window.__sentixFlashInterval = setInterval(inject, 350);
+        }
+    })();
+    </script>
+    """, height=0, width=0)
+
+
+# =====================================================================
+# SESSION STATE & HELPER
+# =====================================================================
+DEFAULTS = {
+    "dongle_verified": False,
+    "biometric_verified": False,
+    "authenticated_officer": "N/A",
+    "password_verified": False,
+    "master_session_key": None,
+    "authenticated": False,
+    "last_bio_result": None,
+    "last_cam_hash": None,
+    "last_up_hash": None,
+}
+for _k, _v in DEFAULTS.items():
+    if _k not in st.session_state:
+        st.session_state[_k] = _v
 if "blockchain" not in st.session_state:
     st.session_state.blockchain = Blockchain()
 
 
-# =====================================================================
-# FLOW 1: USER LOGIN GATEWAY (AIR-GAPPED 3FA GATEKEEPER)
-# =====================================================================
+def reset_auth():
+    for k, v in DEFAULTS.items():
+        st.session_state[k] = v
 
+
+def officer_name():
+    raw = st.session_state.authenticated_officer or "N/A"
+    raw = raw.split("(")[0].replace("Biometrik Terverifikasi:", "").strip()
+    return raw or "Petugas"
+
+
+def pill(text, kind):
+    return f"<span class='pill {kind}'>{text}</span>"
+
+
+def seg(options, key, label="Pilihan"):
+    """Kontrol pilihan bergaya segmented (fallback ke radio di Streamlit lama)."""
+    if hasattr(st, "segmented_control"):
+        v = st.segmented_control(
+            label, options, default=options[0], key=key, label_visibility="collapsed"
+        )
+        return v or options[0]
+    return st.radio(label, options, horizontal=True, key=key, label_visibility="collapsed")
+
+
+def card_head(eyebrow, title, desc=None):
+    html = f"<div class='eyebrow'>{eyebrow}</div><div class='ctitle'>{title}</div>"
+    if desc:
+        html += f"<div class='muted'>{desc}</div>"
+    st.markdown(html, unsafe_allow_html=True)
+
+
+def page_head(title, desc=None):
+    html = f"<div class='ctitle' style='font-size:1.5rem'>{title}</div>"
+    if desc:
+        html += f"<div class='muted'>{desc}</div>"
+    st.markdown(html, unsafe_allow_html=True)
+
+
+# =====================================================================
+# 1. MASUK
+# =====================================================================
 def render_login_flow():
-    col_info, col_gate = st.columns([1, 1.25], gap="large")
+    render_flash_injector()
 
-    with col_info:
-        st.subheader("Protokol Akses Air-Gapped 3FA")
-        st.markdown("""
-        Workstation **Aegis Cold Custody** beroperasi dengan arsitektur **Zero-Trust Hardware Security (NIST SP 800-63B)**. 
-        Kunci privat dan seed phrase dompet kripto hanya dapat diakses secara offline apabila seluruh 3 faktor fisik-fisiologis terpenuhi:
-        
-        * **Faktor 1 (What You Have — Hardware Key HSM):** Kunci fisik USB Flashdisk berisi file token kriptografis `sentix_dongle.key` bertanda tangan HMAC-SHA256.
-        * **Faktor 2 (What You Are — Biometrik Wajah):** Pemindaian geometri wajah petugas berwenang (*128-D Cosine Distance* $\\le 0.32$), dieksekusi efisien pada CPU/iGPU tanpa beban server eksternal.
-        * **Faktor 3 (What You Know — BIP-39 Key Derivation):** Master Passphrase diturunkan menggunakan PBKDF2-HMAC-SHA256 (100.000 iterasi + 16-byte salt) untuk mendekripsi Master Key sesi di RAM.
-        """)
+    d_ok = st.session_state.dongle_verified
+    b_ok = st.session_state.biometric_verified
+    current = 1 if not d_ok else (2 if not b_ok else 3)
 
+    labels = ["Kunci USB", "Wajah", "Password"]
+    done = [d_ok, b_ok, False]
+    parts = []
+    for i, label in enumerate(labels, start=1):
+        if done[i - 1]:
+            cls, mark = "done", "✓"
+        elif i == current:
+            cls, mark = "now", str(i)
+        else:
+            cls, mark = "", str(i)
+        parts.append(f"<div class='step {cls}'><span class='dot'>{mark}</span>{label}</div>")
+        if i < len(labels):
+            parts.append(f"<div class='line {'done' if done[i - 1] else ''}'></div>")
+    st.markdown(f"<div class='stepper'>{''.join(parts)}</div>", unsafe_allow_html=True)
+
+    # ---------- Langkah 1 ----------
+    if current == 1:
         with st.container(border=True):
-            st.markdown("**Petugas Kustodi Terdaftar:**")
-            roster = BiometricVerifier.list_enrolled_faces()
-            if roster:
-                for item in roster:
-                    st.write(f"- **{item['name']}** (`{item['user_id']}`)")
-            else:
-                st.caption("Belum ada petugas terdaftar. Silakan daftarkan akun baru pada tab registrasi.")
+            card_head("Langkah 1 dari 3", "Kunci USB", "Pilih file kunci dongle milik Anda.")
 
-            if not roster:
-                st.markdown("---")
-                if st.button("Daftarkan Akun Default Oktavian (Quickstart)", key="btn_quick_default"):
-                    sample_face = Image.new("RGB", (64, 64), color=(180, 150, 120))
-                    BiometricVerifier.enroll_face(sample_face, user_id="oktavian", name="Oktavian Prasetya Adi (123240135)")
-                    PasswordVerifier.register_account("oktavian", "Oktavian Prasetya Adi (123240135)", "Sentix@2026!")
-                    DongleVerifier.write_dongle_to_path(DATA_DIR / "dongle", holder_name="Oktavian Prasetya Adi (123240135)")
-                    st.success("Akun default Oktavian berhasil didaftarkan!")
-                    st.rerun()
-
-    with col_gate:
-        st.subheader("Verifikasi Autentikasi Cold Custody")
-
-        # STEP 1: HARDWARE DONGLE
-        with st.container(border=True):
-            st.markdown("#### Tahap 1: Hardware USB Security Key (HSM)")
             scanned = DongleVerifier.scan_possible_dongle_locations()
-            
             dongle_choice = None
             if scanned:
-                st.caption(f"Terdeteksi {len(scanned)} file kunci USB dongle di sistem:")
-                dongle_choice = st.selectbox("Pilih file kunci dongle:", [str(p) for p in scanned], label_visibility="collapsed", key="sel_dongle_path")
+                dongle_choice = st.selectbox(
+                    "File kunci", [str(p) for p in scanned], key="sel_dongle_path"
+                )
             else:
-                st.caption("USB fisik belum terdeteksi otomatis. Masukkan path file atau upload file dongle:")
-                up_dongle = st.file_uploader("Upload sentix_dongle.key:", type=["key", "json"], key="up_dongle_login")
-                if up_dongle:
+                st.info("Kunci USB tidak terdeteksi. Unggah file kunci Anda.")
+                up = st.file_uploader("File dongle (.key / .json)", type=["key", "json"], key="up_dongle_login")
+                if up:
                     temp_p = DATA_DIR / "temp_dongle.key"
                     temp_p.parent.mkdir(parents=True, exist_ok=True)
                     with open(temp_p, "wb") as f:
-                        f.write(up_dongle.read())
+                        f.write(up.read())
                     dongle_choice = str(temp_p)
 
-            col_btn1, col_btn2 = st.columns([1.2, 1])
-            with col_btn1:
-                if st.button("Verifikasi Kunci Dongle", use_container_width=True, key="btn_verif_dongle"):
-                    if dongle_choice:
-                        ok, msg, payload = DongleVerifier.verify_dongle_path(dongle_choice)
-                        if ok:
-                            st.session_state.dongle_verified = True
-                            st.success(msg)
-                            st.rerun()
-                        else:
-                            st.error(msg)
-                    else:
-                        st.error("Tentukan atau upload file dongle terlebih dahulu.")
-            with col_btn2:
-                if st.button("Bypass Dongle (Dev Mode)", use_container_width=True, key="btn_bypass_dongle"):
-                    st.session_state.dongle_verified = True
-                    st.success("Hardware dongle bypassed untuk mode pengujian.")
-                    st.rerun()
-
-            col_ds1, col_ds2 = st.columns([2, 1])
-            with col_ds1:
-                if st.session_state.dongle_verified:
-                    st.markdown("<span class='badge-pill badge-success'>STATUS DONGLE: TERHUBUNG</span>", unsafe_allow_html=True)
+            if st.button("Verifikasi kunci", use_container_width=True, type="primary", key="btn_verif_dongle"):
+                if not dongle_choice:
+                    st.error("Pilih atau unggah file dongle terlebih dahulu.")
                 else:
-                    st.markdown("<span class='badge-pill badge-warning'>STATUS DONGLE: BELUM TERHUBUNG</span>", unsafe_allow_html=True)
-            with col_ds2:
-                if st.session_state.dongle_verified and st.button("Reset Dongle", key="btn_rst_dongle"):
-                    st.session_state.dongle_verified = False
-                    st.session_state.biometric_verified = False
-                    st.session_state.password_verified = False
-                    st.session_state.authenticated_officer = "N/A"
-                    st.rerun()
-
-        # STEP 2: BIOMETRIC FACE VERIFICATION (Clean Single Camera UI)
-        with st.container(border=True):
-            st.markdown("#### Tahap 2: Biometrik Wajah Petugas Kustodi")
-            
-            col_bs1, col_bs2 = st.columns([2, 1])
-            with col_bs1:
-                if st.session_state.biometric_verified:
-                    st.markdown(f"<span class='badge-pill badge-success'>STATUS BIOMETRIK: TERVERIFIKASI</span> <small>{st.session_state.authenticated_officer}</small>", unsafe_allow_html=True)
-                else:
-                    st.markdown("<span class='badge-pill badge-warning'>STATUS BIOMETRIK: BELUM DIVERIFIKASI</span>", unsafe_allow_html=True)
-            with col_bs2:
-                if st.button("Reset Biometrik", key="btn_rst_biometric"):
-                    st.session_state.biometric_verified = False
-                    st.session_state.authenticated_officer = "N/A"
-                    st.session_state.last_bio_result = None
-                    st.session_state.last_cam_hash = None
-                    st.session_state.last_up_hash = None
-                    st.rerun()
-
-            if not st.session_state.dongle_verified:
-                st.caption("Selesaikan verifikasi Tahap 1 (Dongle USB) terlebih dahulu.")
-            else:
-                bio_method = st.radio("Metode Capture Wajah:", ["Webcam Live", "Upload Foto", "Simulasi Dev"], horizontal=True, key="bio_method_radio")
-
-                if bio_method == "Webcam Live":
-                    st.caption("Posisikan wajah menghadap webcam dengan pencahayaan memadai, lalu tekan tombol foto di bawah:")
-                    cam_file = st.camera_input("Kamera Pemindaian Biometrik:", key="cam_login_input")
-
-                    if cam_file is not None:
-                        file_bytes = cam_file.getvalue()
-                        photo_hash = hashlib.md5(file_bytes).hexdigest()
-                        if st.session_state.get("last_cam_hash") != photo_hash:
-                            st.session_state.last_cam_hash = photo_hash
-                            probe_img = Image.open(cam_file)
-                            ok, dist, msg = BiometricVerifier.verify_face(probe_img)
-                            st.session_state.biometric_verified = ok
-                            st.session_state.authenticated_officer = msg
-                            st.session_state.last_bio_result = {"ok": ok, "dist": dist, "msg": msg}
-                            st.rerun()
-                    else:
-                        if st.session_state.get("last_cam_hash") is not None:
-                            st.session_state.last_cam_hash = None
-                            st.session_state.biometric_verified = False
-                            st.session_state.authenticated_officer = "N/A"
-                            st.session_state.last_bio_result = None
-                            st.rerun()
-
-                elif bio_method == "Upload Foto":
-                    up_file = st.file_uploader("Upload foto wajah:", type=["jpg", "jpeg", "png"], key="up_login_input")
-                    if up_file is not None:
-                        file_bytes = up_file.getvalue()
-                        file_hash = hashlib.md5(file_bytes).hexdigest()
-                        if st.session_state.get("last_up_hash") != file_hash:
-                            st.session_state.last_up_hash = file_hash
-                            probe_img = Image.open(up_file)
-                            ok, dist, msg = BiometricVerifier.verify_face(probe_img)
-                            st.session_state.biometric_verified = ok
-                            st.session_state.authenticated_officer = msg
-                            st.session_state.last_bio_result = {"ok": ok, "dist": dist, "msg": msg}
-                            st.rerun()
-                    else:
-                        if st.session_state.get("last_up_hash") is not None:
-                            st.session_state.last_up_hash = None
-                            st.session_state.biometric_verified = False
-                            st.session_state.authenticated_officer = "N/A"
-                            st.session_state.last_bio_result = None
-                            st.rerun()
-
-                else:
-                    if st.button("Verifikasi Biometrik (Simulasi Cocok - Dev Mode)", key="btn_sim_ok"):
-                        st.session_state.biometric_verified = True
-                        st.session_state.authenticated_officer = "Biometrik Terverifikasi: Oktavian Prasetya Adi (Simulasi)"
-                        st.session_state.last_bio_result = {
-                            "ok": True,
-                            "dist": 0.05,
-                            "msg": "Biometrik Terverifikasi: Oktavian Prasetya Adi (Mode Simulasi Pengujian)",
-                        }
-                        st.rerun()
-
-                # Result Feedback Card
-                if st.session_state.get("last_bio_result"):
-                    res = st.session_state.last_bio_result
-                    col_m1, col_m2 = st.columns(2)
-                    with col_m1:
-                        st.metric("Cosine Distance", f"{res['dist']:.4f}", help="Ambang Batas <= 0.32 untuk verifikasi valid")
-                    with col_m2:
-                        conf = max(0.0, round((1.0 - res['dist']) * 100, 2))
-                        st.metric("Tingkat Kecocokan", f"{conf}%")
-
-                    if res["ok"]:
-                        st.success(res["msg"])
-                    else:
-                        st.error(res["msg"])
-
-        # STEP 3: MASTER PASSWORD & KEY DERIVATION
-        with st.container(border=True):
-            st.markdown("#### Tahap 3: Master Password & BIP-39 Key Derivation")
-            if not (st.session_state.dongle_verified and st.session_state.biometric_verified):
-                st.caption("Selesaikan verifikasi Tahap 1 (Dongle) dan Tahap 2 (Biometrik) terlebih dahulu.")
-            else:
-                pwd_input = st.text_input("Master Password (Bawaan: `Sentix@2026!`):", type="password", key="master_pwd_input")
-                if st.button("Otorisasi & Buka Aegis Cold Custody", use_container_width=True, key="btn_unlock_vault"):
-                    ok, msg, master_key = PasswordVerifier.verify_password(pwd_input)
+                    ok, msg, _ = DongleVerifier.verify_dongle_path(dongle_choice)
                     if ok:
-                        st.session_state.password_verified = True
-                        st.session_state.master_session_key = master_key
-                        st.session_state.is_dev_mode = False
-                        st.session_state.authenticated = True
-                        st.success("Autentikasi 3FA Sempurna. Menginisialisasi workstation cold wallet...")
-                        time.sleep(0.4)
+                        st.session_state.dongle_verified = True
                         st.rerun()
                     else:
-                        st.error(f"Gagal: {msg}")
+                        st.error(msg)
 
-
-# =====================================================================
-# FLOW 2: USER REGISTRATION (ONBOARDING FLOW)
-# =====================================================================
-
-def render_registration_flow():
-    st.subheader("Registrasi Petugas Kustodi & Penerbitan Hardware Key HSM")
-    st.markdown("""
-    Alur pendaftaran resmi untuk petugas cold custody baru:
-    Identitas Petugas $\\rightarrow$ Hash Password PBKDF2 $\\rightarrow$ Perekaman Biometrik Wajah $\\rightarrow$ Unduh Kunci Fisik USB Dongle.
-    """)
-
-    col_reg1, col_reg2 = st.columns([1.1, 1], gap="large")
-
-    with col_reg1:
-        with st.container(border=True):
-            st.markdown("#### Langkah 1 & 2: Identitas & Password Petugas")
-            reg_name = st.text_input("Nama Lengkap Petugas:", value="Oktavian Prasetya Adi (123240135)", key="reg_name_input")
-            reg_uid = st.text_input("User ID Petugas (ID unik tanpa spasi):", value="oktavian", key="reg_uid_input")
-            
-            col_p1, col_p2 = st.columns(2)
-            with col_p1:
-                reg_pwd1 = st.text_input("Buat Master Password:", type="password", value="Sentix@2026!", key="reg_pwd1_input")
-            with col_p2:
-                reg_pwd2 = st.text_input("Konfirmasi Password:", type="password", value="Sentix@2026!", key="reg_pwd2_input")
-
-        with st.container(border=True):
-            st.markdown("#### Langkah 3: Perekaman Biometrik Wajah")
-            st.caption("Posisikan wajah menghadap webcam dengan pencahayaan memadai, lalu ambil foto:")
-            reg_cam_file = st.camera_input("Kamera Registrasi Biometrik Wajah:", key="reg_cam_input")
-
-            # Fallback upload option
-            with st.expander("Opsi Alternatif: Upload Citra Wajah"):
-                reg_up_file = st.file_uploader("Pilih file foto wajah resmi (.jpg, .png):", type=["jpg", "jpeg", "png"], key="reg_up_input")
-
-    with col_reg2:
-        with st.container(border=True):
-            st.markdown("#### Langkah 4: Finalisasi Pendaftaran & Unduh Dongle")
-            st.caption("Setelah data terisi dan foto wajah diambil, klik tombol di bawah untuk menerbitkan akun dan kunci token USB:")
-
-            face_source = None
-            if reg_cam_file is not None:
-                face_source = Image.open(reg_cam_file)
-                st.info("Citra wajah dari webcam siap didaftarkan.")
-            elif 'reg_up_file' in locals() and reg_up_file is not None:
-                face_source = Image.open(reg_up_file)
-                st.info("Citra wajah dari berkas upload siap didaftarkan.")
-            else:
-                st.warning("Silakan ambil foto wajah pada Langkah 3 terlebih dahulu.")
-
-            if st.button("Daftarkan Akun & Terbitkan Kunci Dongle", use_container_width=True, key="btn_execute_registration"):
-                if not reg_name or not reg_uid:
-                    st.error("Nama Lengkap dan User ID wajib diisi.")
-                elif not reg_pwd1 or reg_pwd1 != reg_pwd2:
-                    st.error("Password tidak cocok atau kosong. Periksa kembali konfirmasi password.")
-                elif face_source is None:
-                    st.error("Foto wajah belum diambil! Silakan ambil foto wajah pada kamera di Langkah 3.")
-                else:
-                    try:
-                        # 1. Enroll Face to Multi-Face Roster
-                        BiometricVerifier.enroll_face(face_source, user_id=reg_uid, name=reg_name)
-
-                        # 2. Register PBKDF2 Password Account
-                        PasswordVerifier.register_account(reg_uid, reg_name, reg_pwd1)
-
-                        # 3. Generate Hardware Dongle Token
-                        dongle_token = DongleVerifier.generate_dongle_token(vault_id=f"AEGIS-{reg_uid.upper()}", holder_name=reg_name)
-                        st.session_state.latest_registered_dongle = json.dumps(dongle_token, indent=2).encode("utf-8")
-                        st.session_state.registration_success_info = f"Akun **{reg_name}** (`{reg_uid}`) berhasil didaftarkan ke sistem!"
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Pendaftaran gagal: {e}")
-
-            if st.session_state.get("registration_success_info"):
-                st.success(st.session_state["registration_success_info"])
-                st.markdown("---")
-                st.markdown("##### 🔑 Unduh Kunci Hardware Security Dongle (HSM):")
-                st.caption("Unduh berkas di bawah dan simpan ke flashdisk USB Anda:")
-                st.download_button(
-                    label="⬇️ Unduh Kunci Dongle USB (sentix_dongle.key)",
-                    data=st.session_state.get("latest_registered_dongle", b""),
-                    file_name="sentix_dongle.key",
-                    mime="application/json",
-                    use_container_width=True,
-                    key="btn_download_new_dongle"
-                )
-
-                st.info("Setelah mengunduh kunci, buka menu **'1. Masuk (Login 3FA)'** untuk login ke workstation.")
-
-
-# =====================================================================
-# FLOW 3: DEVELOPER & DOSEN EVALUATION SANDBOX
-# =====================================================================
-
-def render_developer_flow():
-    st.subheader("Mode Pengembang & Sandbox Evaluasi Dosen")
-    st.markdown("""
-    Panel evaluasi akademis untuk pengujian sistem Tugas Akhir Kriptografi.
-    Menampilkan pemenuhan 7 kriteria kurikulum, inspeksi basis data fisik di disk, dan pintasan pengujian cepat dalam lingkungan sandbox terisolasi.
-    """)
-
-    col_d1, col_d2 = st.columns([1.2, 1], gap="large")
-
-    with col_d1:
-        with st.container(border=True):
-            st.markdown("#### Matriks Pemenuhan 7 Kriteria Tugas Akhir Kriptografi")
-            matrix_data = [
-                {"Kriteria Dosen": "1. Login Biometric & Hanya Hidup dengan Dongle", "Implementasi di Aegis Cold Custody": "Air-Gapped 3FA: USB Hardware Key (HMAC-SHA256) + Face Verification", "Silabus": "NIST SP 800-63B"},
-                {"Kriteria Dosen": "2. Login Menggunakan Algoritma Kriptografi", "Implementasi di Aegis Cold Custody": "PBKDF2-HMAC-SHA256 (100.000 iterasi) untuk derivasi Master Key dari PIN", "Silabus": "Materi 8: Hash"},
-                {"Kriteria Dosen": "3. Pesan Teks: Super Enkripsi (Klasik + Modern)", "Implementasi di Aegis Cold Custody": "BIP-39 Mnemonic Armor: Caesar -> Vigenere -> Vernam XOR -> AES-128 CBC", "Silabus": "Materi 3, 4, 6 & 7"},
-                {"Kriteria Dosen": "4. Pesan File: Algoritma Beda dari Teks", "Implementasi di Aegis Cold Custody": "Keystore File (.json/.dat) dienkripsi Stream Cipher RC4 (KSA + PRGA)", "Silabus": "Materi 7: Stream RC4"},
-                {"Kriteria Dosen": "5. Pesan Penting Dienkripsi pada Basisdata", "Implementasi di Aegis Cold Custody": "Whitelisted Address Book di SQLite dengan Authenticated AES-256-GCM AEAD", "Silabus": "Materi 6 & 7: Modern AEAD"},
-                {"Kriteria Dosen": "6. Pesan Gambar Diamankan Steganografi", "Implementasi di Aegis Cold Custody": "Stego Paper Wallet / NFT Camouflage via Spatial LSB (PSNR > 65 dB & MSE)", "Silabus": "Materi 9: Steganografi"},
-                {"Kriteria Dosen": "7. Aset Penting Diamankan Blockchain Sederhana", "Implementasi di Aegis Cold Custody": "Cold Wallet On-Chain Transaction Ledger SHA-256 PoW + Tamper Detection", "Silabus": "Materi 8: Hash & Chain"},
-            ]
-            st.table(matrix_data)
-
-        with st.container(border=True):
-            st.markdown("#### Inspektur Basis Data SQLite Fisik (Raw Ciphertext On-Disk)")
-            st.caption("Membuktikan kepada dosen penguji bahwa record sensitif di SQLite tersimpan murni dalam bentuk terenkripsi AES-256-GCM:")
-            raws = get_raw_database_records()
-            if raws:
-                st.table(raws)
-            else:
-                st.info("Database saat ini masih kosong.")
-
-    with col_d2:
-        with st.container(border=True):
-            st.markdown("#### Pintasan Pengujian Cepat (1-Click Fast Bypass - Sandbox Mode)")
-            st.caption("Gunakan tombol ini saat demonstrasi jika dosen ingin langsung menguji modul kriptografi tanpa proses pemindaian fisik:")
-            
-            if st.button("⚡ 1-Click Fast Bypass ke Dashboard Sandbox", use_container_width=True, key="dev_fast_bypass"):
+        with st.expander("Mode simulasi (untuk demo)"):
+            st.caption("Lewati pemeriksaan kunci USB.")
+            if st.button("Lewati verifikasi kunci", use_container_width=True, key="btn_bypass_dongle"):
                 st.session_state.dongle_verified = True
-                st.session_state.biometric_verified = True
-                st.session_state.password_verified = True
-                st.session_state.authenticated_officer = "Oktavian Prasetya Adi (Sandbox Mode)"
-                st.session_state.master_session_key = hashlib.sha256(b"AegisSandboxBypassKey2026").hexdigest()
-                st.session_state.is_dev_mode = True
-                st.session_state.authenticated = True
                 st.rerun()
 
-            if st.button("🔄 Reset Seluruh Sesi & Status Auth", use_container_width=True, key="dev_full_reset"):
-                st.session_state.dongle_verified = False
+    # ---------- Langkah 2 ----------
+    elif current == 2:
+        with st.container(border=True):
+            card_head("Langkah 2 dari 3", "Verifikasi wajah & Anti-Spoofing", "Hadap kamera dan gunakan Flash Layar untuk verifikasi keaktifan wajah (Liveness).")
+            st.caption("🛡️ **Hardened Biometric Enforcement**: Opsi unggah file foto dinonaktifkan di level autentikasi untuk memblokir celah pencurian/pemalsuan foto (*Presentation Attack*). Wajib live sensor.")
+
+            method = seg(["Kamera (Live Capture)", "Simulasi Demo"], "bio_method_radio", "Metode")
+
+            if method == "Kamera (Live Capture)":
+                cam = st.camera_input("Kamera", key="cam_login_input", label_visibility="collapsed")
+                if cam is not None:
+                    h = hashlib.md5(cam.getvalue()).hexdigest()
+                    if st.session_state.last_cam_hash != h:
+                        st.session_state.last_cam_hash = h
+                        img_input = Image.open(cam)
+                        ok, dist, msg = BiometricVerifier.verify_face(img_input, check_liveness=True)
+                        liv_data = BiometricVerifier.analyze_liveness(img_input)
+                        st.session_state.biometric_verified = ok
+                        st.session_state.authenticated_officer = msg
+                        st.session_state.last_bio_result = {
+                            "ok": ok, "dist": dist, "msg": msg, "liveness": liv_data
+                        }
+                        st.rerun()
+                elif st.session_state.last_cam_hash is not None:
+                    st.session_state.last_cam_hash = None
+                    st.session_state.biometric_verified = False
+                    st.session_state.last_bio_result = None
+                    st.rerun()
+
+            else:  # Simulasi Demo
+                st.info("Mode simulasi: wajah dianggap cocok tanpa pemindaian (untuk keperluan demo di komputer tanpa webcam).")
+                if st.button("Jalankan simulasi cocok", use_container_width=True, type="primary", key="btn_sim_ok"):
+                    st.session_state.biometric_verified = True
+                    st.session_state.authenticated_officer = "Biometrik Terverifikasi: Oktavian Prasetya Adi (Simulasi)"
+                    st.session_state.last_bio_result = {
+                        "ok": True, "dist": 0.05, "msg": "Wajah terverifikasi (mode simulasi).",
+                        "liveness": {"is_live": True, "liveness_score": 98.0, "status": "LIVE_VERIFIED", "mean_lux": 82.5, "skin_ratio": 72.0}
+                    }
+                    st.rerun()
+
+            res = st.session_state.last_bio_result
+            if res:
+                if res["ok"]:
+                    st.success(res["msg"])
+                    liv = res.get("liveness", {})
+                    if liv:
+                        c_liv1, c_liv2, c_liv3 = st.columns(3)
+                        with c_liv1:
+                            st.caption(f"🛡️ **Liveness:** `{liv.get('liveness_score', 90)}%`")
+                        with c_liv2:
+                            st.caption(f"☀️ **Flash:** `{liv.get('mean_lux', 0)} Lux`")
+                        with c_liv3:
+                            st.caption(f"🎯 **Pigmen Kulit:** `{liv.get('skin_ratio', 0)}%`")
+                else:
+                    st.error(res["msg"])
+                    low = res["msg"].lower()
+                    if "gelap" in low or "shutter" in low:
+                        st.warning("Foto terlalu gelap. Buka penutup webcam dan pakai tombol flash layar.")
+                    with st.expander("Detail teknis evaluasi anti-spoofing"):
+                        st.write(f"Cosine distance: `{res['dist']:.4f}` (diterima jika ≤ 0.32)")
+                        liv = res.get("liveness", {})
+                        if liv:
+                            st.json(liv)
+
+        if st.button("← Kembali ke langkah 1", key="btn_back_1"):
+            reset_auth()
+            st.rerun()
+
+    # ---------- Langkah 3 ----------
+    else:
+        with st.container(border=True):
+            card_head("Langkah 3 dari 3", "Master password")
+            st.markdown(
+                f"<div class='muted'>Wajah terverifikasi: <b style='color:#E6EAF2'>{officer_name()}</b></div>",
+                unsafe_allow_html=True,
+            )
+            pwd = st.text_input("Password", type="password", key="master_pwd_input")
+            if st.button("Buka vault", use_container_width=True, type="primary", key="btn_unlock_vault"):
+                ok, msg, master_key = PasswordVerifier.verify_password(pwd)
+                if ok:
+                    st.session_state.password_verified = True
+                    st.session_state.master_session_key = master_key
+                    st.session_state.authenticated = True
+                    st.rerun()
+                else:
+                    st.error(f"Gagal: {msg}")
+
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("← Ulangi verifikasi wajah", use_container_width=True, key="btn_rst_biometric"):
                 st.session_state.biometric_verified = False
-                st.session_state.password_verified = False
                 st.session_state.authenticated_officer = "N/A"
-                st.session_state.master_session_key = None
-                st.session_state.is_dev_mode = False
-                st.session_state.authenticated = False
                 st.session_state.last_bio_result = None
                 st.session_state.last_cam_hash = None
                 st.session_state.last_up_hash = None
                 st.rerun()
-
-            st.markdown("---")
-            st.markdown("##### Generator Virtual Dongle:")
-            st.caption("Membuat file dongle virtual di `data/dongle/sentix_dongle.key` jika tidak menggunakan flashdisk fisik:")
-            if st.button("Buat Virtual Dongle di Folder Lokal (data/dongle/)", use_container_width=True, key="dev_mk_dongle"):
-                p = DongleVerifier.write_dongle_to_path(DATA_DIR / "dongle", holder_name="Oktavian Prasetya Adi & Grace Rianty Butar Butar")
-                st.success(f"Virtual dongle berhasil dibuat di: `{p}`")
+        with c2:
+            if st.button("Mulai dari awal", use_container_width=True, key="btn_rst_all"):
+                reset_auth()
                 st.rerun()
 
 
 # =====================================================================
-# MAIN AUTHENTICATED DASHBOARD (5 CRYPTO MODULES)
+# 2. REGISTRASI
 # =====================================================================
+def render_registration_flow():
+    render_flash_injector()
 
-def render_main_dashboard():
-    st.markdown("<h2 style='margin-bottom: 2px;'>AEGIS COLD CUSTODY &mdash; AIR-GAPPED WORKSTATION</h2>", unsafe_allow_html=True)
-    st.caption("Status Sistem: Terkunci pada Hardware Token USB | Sesi Biometrik Terverifikasi | Enkripsi End-to-End Tugas Akhir Kriptografi")
+    with st.container(border=True):
+        card_head("Langkah 1 dari 3", "Data akun")
+        c1, c2 = st.columns(2)
+        with c1:
+            reg_name = st.text_input("Nama lengkap", key="reg_name_input")
+        with c2:
+            reg_uid = st.text_input("User ID (tanpa spasi)", key="reg_uid_input")
+        c3, c4 = st.columns(2)
+        with c3:
+            reg_pwd1 = st.text_input("Master password", type="password", key="reg_pwd1_input")
+        with c4:
+            reg_pwd2 = st.text_input("Ulangi password", type="password", key="reg_pwd2_input")
 
-    col_b1, col_b2, col_b3, col_b4 = st.columns([1.2, 1, 1, 1])
-    with col_b1:
-        officer_disp = st.session_state.authenticated_officer.split('(')[0].replace('Biometrik Terverifikasi:', '').strip()[:24]
-        st.markdown(f"<span class='badge-pill badge-success'>OFFICER: {officer_disp}</span>", unsafe_allow_html=True)
-    with col_b2:
-        st.markdown("<span class='badge-pill badge-hsm'>HSM DONGLE: CONNECTED</span>", unsafe_allow_html=True)
-    with col_b3:
-        if st.session_state.get("is_dev_mode", False):
-            st.markdown("<span class='badge-pill badge-warning'>MODE: SANDBOX ISOLATED</span>", unsafe_allow_html=True)
+    with st.container(border=True):
+        card_head("Langkah 2 dari 3", "Foto wajah", "Hadap kamera, lalu ambil foto.")
+        reg_cam_file = st.camera_input("Kamera", key="reg_cam_input", label_visibility="collapsed")
+        reg_up_file = None
+        with st.expander("Atau unggah foto"):
+            reg_up_file = st.file_uploader("Foto wajah", type=["jpg", "jpeg", "png"], key="reg_up_input")
+
+    face_source = None
+    if reg_cam_file is not None:
+        face_source = Image.open(reg_cam_file)
+    elif reg_up_file is not None:
+        face_source = Image.open(reg_up_file)
+
+    with st.container(border=True):
+        card_head("Langkah 3 dari 3", "Selesaikan pendaftaran")
+        if face_source is None:
+            st.markdown(pill("Foto wajah belum ada", "warn"), unsafe_allow_html=True)
         else:
-            st.markdown("<span class='badge-pill badge-success'>MODE: SECURE PRODUCTION</span>", unsafe_allow_html=True)
-    with col_b4:
-        if st.button("Kunci Workstation (Logout)", use_container_width=True, key="btn_logout_main"):
-            st.session_state.authenticated = False
-            st.session_state.dongle_verified = False
-            st.session_state.biometric_verified = False
-            st.session_state.password_verified = False
-            st.session_state.master_session_key = None
-            st.session_state.authenticated_officer = "N/A"
-            st.session_state.is_dev_mode = False
-            st.session_state.last_bio_result = None
-            st.session_state.last_cam_hash = None
-            st.session_state.last_up_hash = None
-            st.rerun()
+            st.markdown(pill("Foto wajah siap", "ok"), unsafe_allow_html=True)
 
-    if st.session_state.get("is_dev_mode", False):
-        st.warning("⚠️ **MODE PENGEMBANG (SANDBOX AKTIF)**: Anda masuk melalui bypass evaluasi. Demi kepatuhan Zero-Trust Security, akses ke data riil produksi diblokir dan dialihkan ke mock data simulasi.")
-
-    st.markdown("---")
-
-    # 5 Core Cryptographic Tabs
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "1. Mnemonic Seed Armor (Super-Enkripsi)",
-        "2. Keystore Vault (RC4)",
-        "3. Stego Paper Wallet",
-        "4. Blockchain Ledger Aset",
-        "5. Whitelisted Address Book"
-    ])
-
-    # -----------------------------------------------------------------
-    # TAB 1: MNEMONIC SEED ARMOR (SUPER ENKRIPSI 4-TAHAP)
-    # -----------------------------------------------------------------
-    with tab1:
-        st.subheader("BIP-39 Mnemonic Seed Phrase Armor (Super-Enkripsi 4-Tahap)")
-        st.info("""
-        **Rujukan: Materi 3 (Caesar), Materi 4 (Vigenère), Materi 7 (Vernam Stream), dan Materi 6/7 (Block Cipher AES):**
-        Menyandi 12/24 kata pemulihan dompet kripto (*BIP-39 Seed Phrase*) agar kebal terhadap malware pencuri memori clipboard.
-        - **Tahap 1:** Caesar Cipher (Monoalfabetik) — *Grace Rianty Butar Butar (123240036)*
-        - **Tahap 2:** Vigenère Cipher (Polialfabetik) — *Grace Rianty Butar Butar (123240036)*
-        - **Tahap 3:** Vernam Stream Cipher (Bitwise XOR Keystream) — *Oktavian Prasetya Adi (123240135)*
-        - **Tahap 4:** AES-128 Block Cipher (CBC Mode + PKCS7 Padding) — *Oktavian Prasetya Adi (123240135)*
-        """)
-
-        mode_super_pilihan = st.radio(
-            "Pilih Skema Super-Enkripsi Seed Phrase:",
-            [
-                "Pipeline 4-Tahap Lengkap (Caesar ➔ Vigenère ➔ Vernam Stream ➔ AES-128)",
-                "Super Enkripsi 2-Tahap Cepat (Vigenère + AES-256-CBC)",
-            ],
-            horizontal=True,
-            key="rad_super_scheme",
-        )
-
-        if mode_super_pilihan.startswith("Pipeline 4-Tahap"):
-            col_4enc, col_4dec = st.columns(2, gap="large")
-
-            with col_4enc:
-                with st.container(border=True):
-                    st.markdown("#### Enkripsi 4-Tahap Seed Phrase")
-                    st.caption("12 kata rahasia diproses melewati 4 lapisan kriptografi klasik dan modern:")
-                    plain_4 = st.text_area(
-                        "12 Kata Pemulihan Dompet (BIP-39 Seed):",
-                        "witch collapse practice feed shame open despair creek road again ice cheese",
-                        key="sup4_plain_in",
-                        height=90
-                    )
-
-                    col_k_a, col_k_b = st.columns(2)
-                    with col_k_a:
-                        k_c_shift = st.number_input("1. Caesar Shift k (Grace):", min_value=1, max_value=25, value=8, key="k_c_shift_in")
-                        k_v_key = st.text_input("2. Kunci Vigenère (Grace):", value="UPN2026", key="k_v_key_in")
-                    with col_k_b:
-                        k_vernam = st.text_input("3. Keystream Vernam (Okta):", value="VERNAM", key="k_vernam_in")
-                        k_aes_key = st.text_input("4. Kunci AES-128 (Okta):", value="mysecretkey12345", key="k_aes_key_in")
-
-                    if st.button("Eksekusi Pipeline 4-Tahap", use_container_width=True, key="btn_exec_4stage_enc"):
-                        if plain_4 and k_v_key and k_vernam and k_aes_key:
-                            try:
-                                res4 = super_encrypt_4stage(plain_4, k_c_shift, k_v_key, k_vernam, k_aes_key)
-                                st.success("Pipeline 4-Tahap Berhasil Mengamankan Seed Phrase!")
-
-                                st.markdown("##### Tabel Transformasi Tiap Tahap:")
-                                st.table(res4["stages"])
-
-                                st.markdown("**Cipherteks Akhir (Base64 Armored Envelope):**")
-                                st.code(res4["final_cipher"], language="text")
-                            except Exception as e:
-                                st.error(f"Gagal enkripsi: {e}")
-                        else:
-                            st.error("Lengkapi seluruh seed phrase dan parameter kunci.")
-
-            with col_4dec:
-                with st.container(border=True):
-                    st.markdown("#### Pemulihan Dekripsi 4-Tahap")
-                    st.caption("Pembalikan berurutan: AES-128 Decrypt ➔ Vernam XOR ➔ Vigenère Decrypt ➔ Caesar Decrypt:")
-                    cipher_4_in = st.text_area("Cipherteks Input (Base64):", "", key="sup4_cipher_in", height=90)
-
-                    col_dk_a, col_dk_b = st.columns(2)
-                    with col_dk_a:
-                        dk_c_shift = st.number_input("1. Caesar Shift k:", min_value=1, max_value=25, value=8, key="dk_c_shift_in")
-                        dk_v_key = st.text_input("2. Kunci Vigenère:", value="UPN2026", key="dk_v_key_in")
-                    with col_dk_b:
-                        dk_vernam = st.text_input("3. Keystream Vernam:", value="VERNAM", key="dk_vernam_in")
-                        dk_aes_key = st.text_input("4. Kunci AES-128:", value="mysecretkey12345", key="dk_aes_key_in")
-
-                    if st.button("Eksekusi Pembalik 4-Tahap", use_container_width=True, key="btn_exec_4stage_dec"):
-                        if cipher_4_in and dk_v_key and dk_vernam and dk_aes_key:
-                            try:
-                                dec4 = super_decrypt_4stage(cipher_4_in.strip(), dk_c_shift, dk_v_key, dk_vernam, dk_aes_key)
-                                st.success("Seluruh 4 Tahap Pembalik Berhasil!")
-
-                                st.markdown("##### Alur Rekonstruksi Tiap Tahap:")
-                                st.table(dec4["stages_dec"])
-
-                                st.markdown("**12 Kata Seed Phrase Asli Pulih Sempurna:**")
-                                st.success(dec4["final_plaintext"])
-                            except Exception as e:
-                                st.error(f"Gagal Dekripsi: {e} (Format tidak valid atau parameter kunci salah)")
-                        else:
-                            st.error("Masukkan cipherteks dan parameter seluruh kunci.")
-
-        else:
-            col_enc, col_dec = st.columns(2, gap="large")
-
-            with col_enc:
-                with st.container(border=True):
-                    st.markdown("#### Enkripsi 2-Tahap Ringkas")
-                    plain_input = st.text_area("Plainteks Seed / Private Key:", "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d", key="se_plain_input")
-                    col_k1, col_k2 = st.columns(2)
-                    with col_k1:
-                        k_classical = st.text_input("Kunci Vigenère (Grace):", "UPN2026", key="se_k_classical")
-                    with col_k2:
-                        k_modern = st.text_input("Passphrase AES-256 (Okta):", "AegisColdMasterPassphrase!", key="se_k_modern")
-
-                    if st.button("Eksekusi Super-Enkripsi", use_container_width=True, key="btn_exec_super_enc"):
-                        if plain_input and k_classical and k_modern:
-                            res = super_encrypt(plain_input, k_classical, k_modern)
-                            st.success("Enkripsi Dua Lapis Berhasil!")
-
-                            st.markdown("**Tahap 1 &mdash; Output Vigenère:**")
-                            st.code(res["vigenere_output"], language="text")
-
-                            st.markdown("**Tahap 2 &mdash; Output Final AES-256-CBC:**")
-                            st.code(res["final_ciphertext_base64"], language="text")
-                            st.caption(f"IV (Hex): {res['iv_hex']}")
-                        else:
-                            st.error("Lengkapi seluruh kolom teks dan kunci.")
-
-            with col_dec:
-                with st.container(border=True):
-                    st.markdown("#### Dekripsi 2-Tahap")
-                    cipher_input = st.text_area("Cipherteks Base64:", "", key="se_cipher_input")
-                    col_dk1, col_dk2 = st.columns(2)
-                    with col_dk1:
-                        dk_classical = st.text_input("Kunci Vigenère:", "UPN2026", key="dec_vig_input")
-                    with col_dk2:
-                        dk_modern = st.text_input("Passphrase AES-256:", "AegisColdMasterPassphrase!", key="dec_aes_input")
-
-                    if st.button("Eksekusi Super-Dekripsi", use_container_width=True, key="btn_exec_super_dec"):
-                        if cipher_input and dk_classical and dk_modern:
-                            try:
-                                dres = super_decrypt(cipher_input.strip(), dk_classical, dk_modern)
-                                st.success("Dekripsi Berhasil!")
-                                st.markdown("**Plainteks Asli Pulih:**")
-                                st.success(dres["final_plaintext"])
-                            except Exception as e:
-                                st.error(f"Gagal Dekripsi: {e}")
-                        else:
-                            st.error("Masukkan cipherteks dan kedua kunci.")
-
-    # -----------------------------------------------------------------
-    # TAB 2: ENKRIPSI KEYSTORE FILE (RC4 Stream Cipher)
-    # -----------------------------------------------------------------
-    with tab2:
-        st.subheader("Brankas Berkas Keystore: Stream Cipher RC4")
-        st.info("""
-        **Rujukan: Materi 7 (Stream Cipher & Algoritma RC4):**
-        Spesifikasi mewajibkan enkripsi berkas menggunakan algoritma yang **berbeda dari teks**. 
-        Berkas biner cadangan dompet (seperti `keystore.json`, `.dat`, atau `.key`) dienkripsi bit-per-byte menggunakan **RC4 (KSA + PRGA)**.
-        """)
-
-        file_mode = st.radio("Pilih Operasi Berkas Keystore:", ["Enkripsi Berkas Keystore", "Dekripsi Berkas Keystore (.enc)"], horizontal=True, key="file_mode_radio")
-
-        if file_mode == "Enkripsi Berkas Keystore":
-            with st.container(border=True):
-                up_raw = st.file_uploader("Pilih Berkas Keystore / Private Key (.json, .dat, .key):", type=None, key="raw_file_uploader")
-                rc4_pwd = st.text_input("Passphrase Kunci RC4:", "RC4ColdKeystoreProtectionKey!", key="rc4_enc_key")
-
-                if up_raw and rc4_pwd:
-                    if st.button("Enkripsi Berkas via RC4", use_container_width=True, key="btn_enc_rc4_file"):
-                        raw_data = up_raw.read()
-                        enc_data = encrypt_file_bytes(raw_data, up_raw.name, rc4_pwd)
-                        st.success(f"Berkas keystore berhasil dienkripsi! Ukuran: {len(enc_data)} bytes.")
-                        st.download_button(
-                            label="Unduh Berkas Terenkripsi (.enc)",
-                            data=enc_data,
-                            file_name=f"{up_raw.name}.enc",
-                            mime="application/octet-stream",
-                            use_container_width=True
-                        )
-        else:
-            with st.container(border=True):
-                up_enc = st.file_uploader("Upload Berkas Terenkripsi (.enc):", type=None, key="enc_file_uploader")
-                rc4_dec_pwd = st.text_input("Passphrase Kunci RC4:", "RC4ColdKeystoreProtectionKey!", key="rc4_dec_key")
-
-                if up_enc and rc4_dec_pwd:
-                    if st.button("Dekripsi Berkas via RC4", use_container_width=True, key="btn_dec_rc4_file"):
-                        try:
-                            enc_data = up_enc.read()
-                            dec_bytes, orig_name = decrypt_file_bytes(enc_data, rc4_dec_pwd)
-                            st.success(f"Berkas berhasil didekripsi! Nama asli dipulihkan: {orig_name}")
-                            st.download_button(
-                                label=f"Unduh Berkas Pulih ({orig_name})",
-                                data=dec_bytes,
-                                file_name=orig_name,
-                                mime="application/octet-stream",
-                                use_container_width=True
-                            )
-                        except Exception as e:
-                            st.error(f"Gagal dekripsi berkas: {e}")
-
-    # -----------------------------------------------------------------
-    # TAB 3: STEGANOGRAFI PAPER WALLET (Spatial LSB)
-    # -----------------------------------------------------------------
-    with tab3:
-        st.subheader("Stego Paper Wallet & NFT Camouflage (Spatial LSB)")
-        st.info("""
-        **Rujukan: Materi 9 (Steganografi Citra Digital - Spatial Domain):**
-        Menyamarkan 12 kata seed phrase ke dalam bit terendah (LSB) kanal RGB avatar NFT atau kartu paper wallet.
-        Dilengkapi pengujian rasio **PSNR > 65 dB** dan **MSE $\\approx 0$** untuk membuktikan bahwa penyamaran tidak menimbulkan distorsi kasat mata.
-        """)
-
-        stego_tab1, stego_tab2 = st.tabs(["Sisipkan Seed ke Gambar (Encode)", "Ekstrak Seed dari Gambar (Decode)"])
-
-        with stego_tab1:
-            col_s1, col_s2 = st.columns(2, gap="large")
-            with col_s1:
-                with st.container(border=True):
-                    stego_cover = st.file_uploader("Pilih Gambar Sampul (Avatar NFT / Card):", type=["png", "bmp", "jpg"], key="stego_cover_up")
-                    secret_msg = st.text_area(
-                        "12 Kata Seed Phrase yang Disamarkan:",
-                        "witch collapse practice feed shame open despair creek road again ice cheese",
-                        key="stego_secret_text"
-                    )
-                    if stego_cover:
-                        cov_img = Image.open(stego_cover)
-                        st.image(cov_img, caption="Cover Image Asli", use_container_width=True)
-
-            with col_s2:
-                if stego_cover and secret_msg:
-                    with st.container(border=True):
-                        if st.button("Sisipkan Seed Phrase ke Citra (LSB)", use_container_width=True, key="btn_stego_embed"):
-                            try:
-                                cov_img = Image.open(stego_cover)
-                                stego_res, metrics = embed_secret_message(cov_img, secret_msg)
-                                st.success("Seed Phrase Berhasil Disamarkan ke Citra!")
-                                st.image(stego_res, caption="Stego Paper Wallet (Hasil LSB)", use_container_width=True)
-
-                                st.markdown("##### Metrik Kualitas Citra Akademis:")
-                                st.write(f"- **PSNR:** `{metrics['psnr_db']} dB` ({metrics['visual_quality']})")
-                                st.write(f"- **MSE:** `{metrics['mse']}`")
-                                st.write(f"- **Kapasitas Terpakai:** `{metrics['capacity_used_pct']}%` ({metrics['payload_bytes']} bytes)")
-
-                                buf = BytesIO()
-                                stego_res.save(buf, format="PNG")
-                                st.download_button(
-                                    label="Unduh Stego Paper Wallet (PNG)",
-                                    data=buf.getvalue(),
-                                    file_name="stego_paper_wallet.png",
-                                    mime="image/png",
-                                    use_container_width=True
-                                )
-                            except Exception as e:
-                                st.error(f"Gagal menyisipkan seed: {e}")
-
-        with stego_tab2:
-            with st.container(border=True):
-                stego_probe = st.file_uploader("Upload Stego Paper Wallet (PNG):", type=["png", "bmp"], key="stego_probe_up")
-                if stego_probe:
-                    p_img = Image.open(stego_probe)
-                    st.image(p_img, caption="Stego-Image Terpilih", width=300)
-                    if st.button("Ekstrak Seed Phrase Tersembunyi", use_container_width=True, key="btn_stego_extract"):
-                        try:
-                            recovered_msg = extract_secret_message(p_img)
-                            st.success("Seed Phrase Berhasil Dipulihkan dari Piksel Gambar!")
-                            st.code(recovered_msg, language="text")
-                        except Exception as e:
-                            st.error(f"Gagal mengekstrak pesan: {e}")
-
-    # -----------------------------------------------------------------
-    # TAB 4: BLOCKCHAIN INTEGRITAS ASET (PoW)
-    # -----------------------------------------------------------------
-    with tab4:
-        st.subheader("Buku Besar Transaksi Cold Wallet (SHA-256 Proof-of-Work)")
-        st.info("""
-        **Rujukan: Materi 8 (Fungsi Hash Satu-Arah & Rantai Blok):**
-        Mencatat riwayat mutasi aset digital institusi menggunakan rantai blok terdesentralisasi SHA-256 dengan konsensus Proof-of-Work (PoW).
-        Dilengkapi alat uji coba simulasi peretasan saldo untuk demonstrasi deteksi tamper otomatis.
-        """)
-
-        bc = st.session_state.blockchain
-
-        col_chain_stat, col_audit = st.columns([1.5, 1])
-        with col_chain_stat:
-            st.metric("Total Blok Terdaftar di Ledger", len(bc.chain))
-        with col_audit:
-            if st.button("Audit Integritas Rantai Blok", use_container_width=True, key="btn_audit_bc"):
-                is_valid, report = bc.is_chain_valid()
-                if is_valid:
-                    st.success(report)
-                else:
-                    st.error(report)
-
-        # Form Transaksi Baru
-        with st.expander("Catat Transaksi Cold-to-Hot Transfer Baru"):
-            col_tx1, col_tx2, col_tx3 = st.columns(3)
-            with col_tx1:
-                tx_sender = st.text_input("Alamat Pengirim:", "0x123240135_COLD_CUSTODY", key="bc_tx_sender")
-            with col_tx2:
-                tx_recipient = st.text_input("Alamat Penerima:", "0x71C8364437a5674366B0D5D690EAbc7C3E8d4239", key="bc_tx_recipient")
-            with col_tx3:
-                tx_asset = st.selectbox("Aset Kripto:", ["BTC", "ETH", "USDT", "SOL"], key="bc_tx_asset")
-            
-            col_tx4, col_tx5 = st.columns([1, 2])
-            with col_tx4:
-                tx_amount = st.number_input("Jumlah Aset:", min_value=0.01, value=2.5, step=0.1, key="bc_tx_amount")
-            with col_tx5:
-                tx_memo = st.text_input("Memo Settlement:", "Cold reserve liquidity release", key="bc_tx_memo")
-
-            if st.button("Kirim ke Antrian Blok", key="btn_queue_tx"):
-                bc.add_transaction(tx_sender, tx_recipient, tx_asset, tx_amount, tx_memo)
-                st.success(f"Transaksi masuk antrian. Pending transactions: {len(bc.pending_transactions)}")
-
-        # Mining Panel
-        if bc.pending_transactions:
-            st.warning(f"Terdapat {len(bc.pending_transactions)} transaksi pending menunggu konfirmasi blok.")
-            if st.button("Tambang Blok Baru (Proof-of-Work)", use_container_width=True, key="btn_mine_bc"):
-                with st.spinner("Menambang blok dengan target kesulitan hash SHA-256..."):
-                    new_b = bc.mine_pending_transactions(miner_address="AEGIS_VALIDATOR_NODE")
-                    st.success(f"Blok #{new_b.index} berhasil ditambang! Hash: {new_b.hash[:20]}... Nonce: {new_b.nonce}")
-                    st.rerun()
-
-        # Chain Explorer
-        st.markdown("#### Rantai Blok Saat Ini")
-        for b in reversed(bc.chain):
-            with st.container(border=True):
-                col_h1, col_h2 = st.columns([1, 2])
-                with col_h1:
-                    st.markdown(f"### Blok #{b.index}")
-                    st.caption(f"Nonce: `{b.nonce}` | Waktu: `{time.ctime(b.timestamp)}`")
-                with col_h2:
-                    st.code(f"Hash      : {b.hash}\nPrev Hash : {b.previous_hash}", language="text")
-                st.json(b.transactions)
-
-        # Educational Tamper Injection
-        with st.expander("Simulasi Serangan Manipulasi Saldo (Tamper Injection Demo)"):
-            st.caption("Uji coba mengubah nilai transaksi pada blok yang sudah ditambang untuk melihat respon deteksi otomatis:")
-            if len(bc.chain) > 1:
-                target_idx = st.number_input("Pilih Index Blok untuk Dimanipulasi:", min_value=1, max_value=len(bc.chain)-1, value=1, key="bc_tamper_idx")
-                fake_amt = st.number_input("Ganti Jumlah Saldo Menjadi:", value=999999.0, key="bc_tamper_amt")
-                if st.button("Manipulasi Nilai Blok (Inject Tamper)", key="btn_inject_tamper"):
-                    bc.tamper_block_for_demo(target_idx, fake_amt)
-                    st.error(f"Blok #{target_idx} telah dirusak secara ilegal! Klik 'Audit Integritas Rantai Blok' di atas untuk melihat respon.")
+        if st.button("Daftar dan buat kunci USB", use_container_width=True, type="primary", key="btn_execute_registration"):
+            if not reg_name or not reg_uid:
+                st.error("Nama dan User ID wajib diisi.")
+            elif " " in reg_uid:
+                st.error("User ID tidak boleh mengandung spasi.")
+            elif not reg_pwd1 or reg_pwd1 != reg_pwd2:
+                st.error("Password kosong atau tidak sama.")
+            elif face_source is None:
+                st.error("Ambil atau unggah foto wajah terlebih dahulu.")
             else:
-                st.caption("Tambang minimal 1 blok baru untuk mencoba fitur simulasi tampering.")
+                try:
+                    BiometricVerifier.enroll_face(face_source, user_id=reg_uid, name=reg_name)
+                    PasswordVerifier.register_account(reg_uid, reg_name, reg_pwd1)
+                    token = DongleVerifier.generate_dongle_token(
+                        vault_id=f"VAULT-{reg_uid.upper()}", holder_name=reg_name
+                    )
+                    st.session_state.latest_registered_dongle = json.dumps(token, indent=2).encode("utf-8")
+                    st.session_state.registration_success_info = f"Akun {reg_name} ({reg_uid}) berhasil dibuat."
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Pendaftaran gagal: {e}")
 
-    # -----------------------------------------------------------------
-    # TAB 5: WHITELISTED ADDRESS BOOK & UTXO (SQLite + AES-256-GCM AEAD)
-    # -----------------------------------------------------------------
-    with tab5:
-        st.subheader("Whitelisted Address Book & UTXO Store (SQLite + AES-256-GCM)")
-        st.info("""
-        **Sesuai Spesifikasi: Pesan/data penting dienkripsi pada basisdata yang digunakan.**
-        Menyimpan daftar alamat dompet tujuan terpercaya dan UTXO cadangan di basis data SQLite lokal (`sentix_vault.db`). 
-        Seluruh record dilindungi oleh **Authenticated Encryption AES-256-GCM** (Ciphertext + 96-bit IV + 128-bit Auth Tag).
-        """)
+        if st.session_state.get("registration_success_info"):
+            st.success(st.session_state["registration_success_info"])
+            st.download_button(
+                "Unduh kunci USB (sentix_dongle.key)",
+                data=st.session_state.get("latest_registered_dongle", b""),
+                file_name="sentix_dongle.key",
+                mime="application/json",
+                use_container_width=True,
+                key="btn_download_new_dongle",
+            )
+            st.caption("Simpan file ini ke flashdisk, lalu buka menu Masuk.")
 
-        # SECURITY ENFORCEMENT: ISOLATE DEV MODE FROM REAL DATABASE
-        if st.session_state.get("is_dev_mode", False):
-            st.error("🔒 **AKSES BASIS DATA PRODUKSI DIBLOKIR PADA MODE PENGEMBANG (SANDBOX ISOLATION)**")
-            st.markdown("""
-            Sesuai standar keamanan *Air-Gapped Cold Custody*, master key yang dihasilkan dari pintasan pengujian (*Developer Bypass*) 
-            **tidak memiliki otoritas untuk membuka basis data riil**.
-            
-            Berikut adalah **Data Simulasi Sandbox (Mock Test Records)** yang disiapkan khusus untuk evaluasi demonstrasi sidang:
-            """)
 
-            mock_sandbox_records = [
-                {
-                    "ID": 101,
-                    "Kategori": "WHITELIST_ADDRESS",
-                    "Label Rekaman": "Binance Institutional Cold Storage",
-                    "Status Enkripsi": "AES-256-GCM (Simulated AEAD)",
-                    "Data Alamat / Kunci (Sandbox)": "0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE"
-                },
-                {
-                    "ID": 102,
-                    "Kategori": "RESERVE_SEED_PHRASE",
-                    "Label Rekaman": "BIP-39 Testnet Recovery Mnemonic",
-                    "Status Enkripsi": "AES-256-GCM (Simulated AEAD)",
-                    "Data Alamat / Kunci (Sandbox)": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
-                },
-                {
-                    "ID": 103,
-                    "Kategori": "UTXO_SIGNING_KEY",
-                    "Label Rekaman": "Bitcoin Multisig Signer #2 Key",
-                    "Status Enkripsi": "AES-256-GCM (Simulated AEAD)",
-                    "Data Alamat / Kunci (Sandbox)": "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nw2nR26Sf6GsW537926"
-                }
-            ]
-            st.table(mock_sandbox_records)
+# =====================================================================
+# 3. DEVELOPER
+# =====================================================================
+def render_developer_flow():
+    t1, t2, t3 = st.tabs(["Alat uji", "Kriteria tugas", "Database"])
 
-            st.info("💡 **Catatan untuk Dosen Penguji:** Untuk melihat, menambah, atau memodifikasi data produksi riil, silakan logout dan lakukan autentikasi 3FA penuh menggunakan Kunci USB HSM + Biometrik Wajah + Master Password asli.")
+    with t1:
+        with st.container(border=True):
+            card_head("Pintasan", "Demo cepat", "Lewati login untuk menguji modul langsung.")
+            if st.button("Masuk langsung ke dashboard", use_container_width=True, type="primary", key="dev_fast_bypass"):
+                st.session_state.dongle_verified = True
+                st.session_state.biometric_verified = True
+                st.session_state.password_verified = True
+                st.session_state.authenticated_officer = "Oktavian Prasetya Adi (Dev Bypass)"
+                st.session_state.master_session_key = hashlib.sha256(b"SentixMasterBypassKey2026").hexdigest()
+                st.session_state.authenticated = True
+                st.rerun()
+            if st.button("Reset semua sesi", use_container_width=True, key="dev_full_reset"):
+                reset_auth()
+                st.rerun()
 
-        else:
-            # LEGITIMATE PRODUCTION ACCESS
-            with st.expander("Tambah Alamat Whitelist / Rekaman Kunci Baru"):
-                d_title = st.text_input("Label Dompet / Judul Rekaman:", "Hot Reserve Liquidity Whitelist", key="db_rec_title")
-                d_cat = st.selectbox("Kategori Aset:", ["WHITELISTED_ADDRESS", "RECOVERY_SEED", "PRIVATE_KEY", "MULTISIG_CONFIG"], key="db_rec_cat")
-                d_secret = st.text_area("Data Sensitif (Alamat / Kunci Privat):", "0x71C8364437a5674366B0D5D690EAbc7C3E8d4239", key="db_rec_secret")
-                
-                if st.button("Simpan Terenkripsi ke Database (AES-256-GCM)", key="btn_save_db_rec"):
-                    if d_title and d_secret:
-                        active_key = st.session_state.master_session_key or "AegisDefaultMasterKey"
-                        rid = insert_secret(d_title, d_cat, d_secret, active_key)
-                        st.success(f"Alamat berhasil disimpan secara terenkripsi di database dengan ID #{rid}!")
+        with st.container(border=True):
+            card_head("Dongle", "Dongle virtual")
+            if st.button("Buat dongle di data/dongle/", use_container_width=True, key="dev_mk_dongle"):
+                p = DongleVerifier.write_dongle_to_path(DATA_DIR / "dongle")
+                st.success(f"Dongle dibuat di: {p}")
+
+        with st.container(border=True):
+            card_head("Biometrik", "Wajah terdaftar")
+            roster = BiometricVerifier.list_enrolled_faces()
+            if not roster:
+                st.caption("Belum ada wajah terdaftar.")
+            for idx, r in enumerate(roster):
+                c1, c2 = st.columns([4, 1])
+                with c1:
+                    st.markdown(
+                        f"**{r['name']}**<br><span class='muted'>`{r['user_id']}` · {r['enrolled_at']}</span>",
+                        unsafe_allow_html=True,
+                    )
+                with c2:
+                    if st.button("Hapus", key=f"del_face_{r['user_id']}_{idx}", use_container_width=True):
+                        BiometricVerifier.delete_face(r["user_id"])
                         st.rerun()
 
-            # Database View Toggle
-            view_mode = st.radio("Pilih Tampilan Database:", ["Tampilan Terdekripsi (Akses Petugas Berwenang)", "Tampilan Raw SQLite Fisik (Apa yang Dilihat Peretas di Disk)"], horizontal=True, key="db_view_toggle")
+        with st.container(border=True):
+            card_head("Lab Evaluasi Dosen", "Uji Spoofing Foto & Anti-Liveness", "Simulasikan skenario hacker: uji apakah foto statis atau gambar curian ditolak oleh engine Liveness.")
+            st.caption("Gunakan alat ini untuk menguji respon sistem terhadap foto statis, hasil print, atau foto ponsel.")
+            dev_up = st.file_uploader("Unggah foto uji (simulasi serangan presentation attack / foto statis)", type=["jpg", "jpeg", "png"], key="dev_photo_spoof_test")
+            if dev_up is not None:
+                img_test = Image.open(dev_up)
+                c_test1, c_test2 = st.columns([1, 2])
+                with c_test1:
+                    st.image(img_test, caption="Foto Uji", use_container_width=True)
+                with c_test2:
+                    l_res = BiometricVerifier.analyze_liveness(img_test)
+                    match_ok, m_dist, m_msg = BiometricVerifier.verify_face(img_test, check_liveness=True)
+                    st.markdown(f"**Status Liveness:** `{'Lolos (LIVE)' if l_res['is_live'] else 'Ditolak (SPOOF DETECTED)'}`")
+                    st.markdown(f"**Liveness Score:** `{l_res['liveness_score']}%`")
+                    st.markdown(f"**Pigmen Kulit Alami:** `{l_res['skin_ratio']}%`")
+                    st.markdown(f"**Iluminasi Lux:** `{l_res['mean_lux']} Lux`")
+                    st.markdown(f"**Dinamika Spekular Flash:** `{l_res['specular_ratio']}%`")
+                    st.markdown(f"**Alasan Evaluasi:** *{l_res['reason']}*")
+                    if match_ok:
+                        st.success(f"Hasil Verifikasi: {m_msg}")
+                    else:
+                        st.error(f"Hasil Verifikasi: {m_msg}")
 
-            if view_mode.startswith("Tampilan Terdekripsi"):
-                active_key = st.session_state.master_session_key or "AegisDefaultMasterKey"
-                records = get_all_secrets_decrypted(active_key)
-                if records:
-                    for r in records:
-                        with st.container(border=True):
-                            col_r1, col_r2 = st.columns([3, 1])
-                            with col_r1:
-                                st.markdown(f"**[{r['category']}] {r['title']}** (ID: `{r['id']}` - {r['account_id']})")
-                                st.caption(f"Dibuat: {r['created_at']} | Status Verifikasi Tag: {r['decryption_status']}")
-                                st.success(r["decrypted_secret"])
-                            with col_r2:
-                                if st.button(f"Hapus #{r['id']}", key=f"del_{r['id']}"):
-                                    delete_record(r['id'])
-                                    st.rerun()
-                else:
-                    st.info("Belum ada rekaman alamat di database.")
+    with t2:
+        st.table([
+            {"No": 1, "Kriteria": "Login biometrik + dongle", "Implementasi": "3FA: USB + wajah + password"},
+            {"No": 2, "Kriteria": "Login dengan kriptografi", "Implementasi": "PBKDF2-HMAC-SHA256"},
+            {"No": 3, "Kriteria": "Pesan: super enkripsi", "Implementasi": "Vigenère, Vernam, AES"},
+            {"No": 4, "Kriteria": "File: algoritma beda", "Implementasi": "RC4 stream cipher"},
+            {"No": 5, "Kriteria": "Pesan penting di basis data", "Implementasi": "SQLite + AES-256-GCM"},
+            {"No": 6, "Kriteria": "Gambar: steganografi", "Implementasi": "LSB RGB + PSNR & MSE"},
+            {"No": 7, "Kriteria": "Aset: blockchain", "Implementasi": "SHA-256 + Proof-of-Work"},
+        ])
+
+    with t3:
+        st.caption("Isi tabel di disk (ciphertext, belum didekripsi).")
+        raws = get_raw_database_records()
+        if raws:
+            st.table(raws)
+        else:
+            st.info("Database masih kosong.")
+
+
+# =====================================================================
+# 4. DASHBOARD
+# =====================================================================
+def tab_pesan():
+    page_head("Pesan", "Enkripsi atau dekripsi teks dengan beberapa lapis algoritma.")
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.caption("Skema")
+        scheme = seg(["4 tahap", "2 tahap"], "rad_super_scheme", "Skema")
+    with c2:
+        st.caption("Tindakan")
+        action = seg(["Enkripsi", "Dekripsi"], "rad_msg_action", "Tindakan")
+
+    with st.container(border=True):
+        if scheme == "4 tahap":
+            card_head("Skema 4 tahap", "Caesar → Vigenère → Vernam → AES-128")
+            if action == "Enkripsi":
+                text = st.text_area("Pesan", "Pesan rahasia untuk dienkripsi", height=90, key="sup4_plain_in")
             else:
-                st.markdown("##### Tampilan Fisik Tabel `vault_records` di SQLite (Raw Ciphertext On-Disk):")
-                raws = get_raw_database_records()
-                if raws:
-                    st.table(raws)
+                text = st.text_area("Pesan terenkripsi", "", height=90, key="sup4_cipher_in")
+
+            ka, kb = st.columns(2)
+            with ka:
+                shift = st.number_input("Caesar shift", min_value=1, max_value=25, value=8, key="k_c_shift_in")
+                vig = st.text_input("Kunci Vigenère", value="KUNCI", key="k_v_key_in")
+            with kb:
+                vern = st.text_input("Keystream Vernam", value="VERNAM", key="k_vernam_in")
+                aes = st.text_input("Kunci AES-128", value="mysecretkey12345", key="k_aes_key_in")
+
+            if st.button(f"{action} pesan", use_container_width=True, type="primary", key="btn_exec_4stage"):
+                if not (text and vig and vern and aes):
+                    st.error("Lengkapi pesan dan semua kunci.")
                 else:
-                    st.info("Database masih kosong.")
+                    try:
+                        if action == "Enkripsi":
+                            r = super_encrypt_4stage(text, shift, vig, vern, aes)
+                            st.success("Pesan berhasil dienkripsi.")
+                            st.caption("Hasil (Base64)")
+                            st.code(r["final_cipher"], language="text")
+                            with st.expander("Lihat tahapan"):
+                                st.table(r["stages"])
+                        else:
+                            r = super_decrypt_4stage(text.strip(), shift, vig, vern, aes)
+                            st.success("Pesan berhasil dibuka.")
+                            st.caption("Pesan asli")
+                            st.code(r["final_plaintext"], language="text")
+                            with st.expander("Lihat tahapan"):
+                                st.table(r["stages_dec"])
+                    except Exception as e:
+                        st.error(f"Gagal: {e}. Periksa format pesan dan kunci.")
+        else:
+            card_head("Skema 2 tahap", "Vigenère → AES-256-CBC")
+            if action == "Enkripsi":
+                text = st.text_area("Pesan", "Pesan rahasia untuk dienkripsi", height=90, key="se_plain_input")
+            else:
+                text = st.text_area("Pesan terenkripsi", "", height=90, key="se_cipher_input")
+
+            ka, kb = st.columns(2)
+            with ka:
+                vig = st.text_input("Kunci Vigenère", "UPN2026", key="se_k_classical")
+            with kb:
+                aes = st.text_input("Passphrase AES", "SentixSuperSecretKey!", key="se_k_modern")
+
+            if st.button(f"{action} pesan", use_container_width=True, type="primary", key="btn_exec_super"):
+                if not (text and vig and aes):
+                    st.error("Lengkapi pesan dan semua kunci.")
+                else:
+                    try:
+                        if action == "Enkripsi":
+                            r = super_encrypt(text, vig, aes)
+                            st.success("Pesan berhasil dienkripsi.")
+                            st.caption("Hasil (Base64)")
+                            st.code(r["final_ciphertext_base64"], language="text")
+                            with st.expander("Lihat tahapan"):
+                                st.caption("Output Vigenère")
+                                st.code(r["vigenere_output"], language="text")
+                                st.caption(f"IV (hex): {r['iv_hex']}")
+                        else:
+                            r = super_decrypt(text.strip(), vig, aes)
+                            st.success("Pesan berhasil dibuka.")
+                            st.caption("Pesan asli")
+                            st.code(r["final_plaintext"], language="text")
+                            with st.expander("Lihat tahapan"):
+                                st.caption("Hasil dekripsi AES")
+                                st.code(r["aes_intermediate"], language="text")
+                    except Exception as e:
+                        st.error(f"Gagal: {e}. Kunci salah atau pesan rusak.")
 
 
-# =====================================================================
-# MAIN APP ROUTING (USER FLOW VS DEVELOPER FLOW)
-# =====================================================================
+def tab_file():
+    page_head("File", "Enkripsi file dengan RC4. Hasilnya berformat .enc.")
+    action = seg(["Enkripsi", "Dekripsi"], "file_mode_radio", "Tindakan")
 
-def main():
-    if not st.session_state.authenticated:
-        st.markdown("<h1 style='text-align: center; letter-spacing: 0.05em; margin-bottom: 2px;'>AEGIS COLD CUSTODY</h1>", unsafe_allow_html=True)
-        st.markdown("<p style='text-align: center; color: #94A3B8; font-size: 14px;'>Air-Gapped BIP-39 Mnemonic Seed Vault & Hardware Key Custodian</p>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align: center; margin-bottom: 16px;'><span class='badge-pill badge-info'>UPN VETERAN YOGYAKARTA</span><span class='badge-pill badge-info'>INFORMATIKA IF-B</span><span class='badge-pill badge-warning'>SYSTEM LOCKED</span></div>", unsafe_allow_html=True)
-        st.markdown("---")
+    with st.container(border=True):
+        if action == "Enkripsi":
+            up = st.file_uploader("File yang diamankan", type=None, key="raw_file_uploader")
+            pwd = st.text_input("Kunci", "RC4VaultProtectionKey!", key="rc4_enc_key")
+            if st.button("Enkripsi file", use_container_width=True, type="primary", key="btn_enc_rc4_file"):
+                if not (up and pwd):
+                    st.error("Pilih file dan isi kunci.")
+                else:
+                    data = encrypt_file_bytes(up.read(), up.name, pwd)
+                    st.success(f"File dienkripsi ({len(data)} bytes).")
+                    st.download_button(
+                        "Unduh file terenkripsi (.enc)",
+                        data=data, file_name=f"{up.name}.enc",
+                        mime="application/octet-stream", use_container_width=True,
+                    )
+        else:
+            up = st.file_uploader("File terenkripsi (.enc)", type=None, key="enc_file_uploader")
+            pwd = st.text_input("Kunci", "RC4VaultProtectionKey!", key="rc4_dec_key")
+            if st.button("Dekripsi file", use_container_width=True, type="primary", key="btn_dec_rc4_file"):
+                if not (up and pwd):
+                    st.error("Pilih file dan isi kunci.")
+                else:
+                    try:
+                        dec, name = decrypt_file_bytes(up.read(), pwd)
+                        st.success(f"File dipulihkan: {name}")
+                        st.download_button(
+                            f"Unduh {name}", data=dec, file_name=name,
+                            mime="application/octet-stream", use_container_width=True,
+                        )
+                    except Exception as e:
+                        st.error(f"Gagal dekripsi: {e}")
 
-        # Top Workflow Navigation: User Login vs User Registration vs Developer Sandbox
-        nav_choice = st.radio(
-            "Pilih Alur Kerja (Workflow):",
-            ["1. Masuk (Login 3FA)", "2. Registrasi Petugas Kustodi", "3. Mode Pengembang & Evaluasi Dosen"],
-            horizontal=True,
-            label_visibility="collapsed",
-            key="top_flow_nav"
+
+def tab_gambar():
+    page_head("Gambar", "Sembunyikan pesan di dalam gambar (steganografi LSB).")
+    action = seg(["Sisipkan pesan", "Baca pesan"], "stego_action", "Tindakan")
+
+    with st.container(border=True):
+        if action == "Sisipkan pesan":
+            cover = st.file_uploader("Gambar sampul", type=["png", "bmp", "jpg"], key="stego_cover_up")
+            secret = st.text_area("Pesan rahasia", "Pesan rahasia yang ingin disembunyikan", key="stego_secret_text")
+            if cover:
+                st.image(Image.open(cover), caption="Gambar asli", use_container_width=True)
+
+            if st.button("Sisipkan pesan", use_container_width=True, type="primary", key="btn_stego_embed"):
+                if not (cover and secret):
+                    st.error("Pilih gambar dan isi pesan.")
+                else:
+                    try:
+                        result, m = embed_secret_message(Image.open(cover), secret)
+                        st.success("Pesan berhasil disisipkan.")
+                        st.image(result, caption="Hasil", use_container_width=True)
+                        st.table([
+                            {"Metrik": "PSNR", "Nilai": f"{m['psnr_db']} dB ({m['visual_quality']})"},
+                            {"Metrik": "MSE", "Nilai": str(m["mse"])},
+                            {"Metrik": "Kapasitas terpakai", "Nilai": f"{m['capacity_used_pct']}% ({m['payload_bytes']} bytes)"},
+                        ])
+                        buf = BytesIO()
+                        result.save(buf, format="PNG")
+                        st.download_button(
+                            "Unduh gambar (PNG)", data=buf.getvalue(),
+                            file_name="stego_asset_image.png", mime="image/png",
+                            use_container_width=True,
+                        )
+                    except Exception as e:
+                        st.error(f"Gagal menyisipkan: {e}")
+        else:
+            probe = st.file_uploader("Gambar hasil steganografi", type=["png", "bmp"], key="stego_probe_up")
+            if probe:
+                img = Image.open(probe)
+                st.image(img, width=300)
+                if st.button("Baca pesan", use_container_width=True, type="primary", key="btn_stego_extract"):
+                    try:
+                        st.success("Pesan ditemukan.")
+                        st.code(extract_secret_message(img), language="text")
+                    except Exception as e:
+                        st.error(f"Gagal membaca pesan: {e}")
+
+
+def tab_aset():
+    page_head("Aset", "Catat transaksi dan periksa apakah riwayatnya masih utuh.")
+    bc = st.session_state.blockchain
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.metric("Jumlah blok", len(bc.chain))
+    with c2:
+        st.metric("Transaksi pending", len(bc.pending_transactions))
+
+    with st.container(border=True):
+        card_head("Transaksi", "Tambah transaksi baru")
+        a, b = st.columns(2)
+        with a:
+            sender = st.text_input("Pengirim", "COLD_VAULT_01", key="bc_tx_sender")
+        with b:
+            recipient = st.text_input("Penerima", "HOT_RESERVE_ALPHA", key="bc_tx_recipient")
+        c, d = st.columns(2)
+        with c:
+            asset = st.selectbox("Aset", ["BTC", "ETH", "USDT", "IDR_STABLE"], key="bc_tx_asset")
+        with d:
+            amount = st.number_input("Jumlah", min_value=0.01, value=10.0, step=0.5, key="bc_tx_amount")
+        memo = st.text_input("Catatan", "Settlement transfer", key="bc_tx_memo")
+        if st.button("Tambah ke antrian", use_container_width=True, key="btn_queue_tx"):
+            bc.add_transaction(sender, recipient, asset, amount, memo)
+            st.rerun()
+
+    col_m, col_a = st.columns(2)
+    with col_m:
+        if st.button("Tambang blok baru", use_container_width=True, type="primary",
+                     disabled=not bc.pending_transactions, key="btn_mine_bc"):
+            with st.spinner("Menambang blok..."):
+                new_b = bc.mine_pending_transactions(miner_address="SENTIX_AUDIT_NODE")
+            st.success(f"Blok #{new_b.index} berhasil ditambang.")
+            st.rerun()
+    with col_a:
+        if st.button("Periksa integritas", use_container_width=True, key="btn_audit_bc"):
+            valid, report = bc.is_chain_valid()
+            (st.success if valid else st.error)(report)
+
+    st.markdown("<div class='eyebrow'>Riwayat blok</div>", unsafe_allow_html=True)
+    shown = list(reversed(bc.chain))[:5]
+    for b in shown:
+        with st.expander(f"Blok #{b.index} · {time.strftime('%d %b %Y %H:%M', time.localtime(b.timestamp))}"):
+            st.table([
+                {"Item": "Hash", "Nilai": b.hash},
+                {"Item": "Hash sebelumnya", "Nilai": b.previous_hash},
+                {"Item": "Nonce", "Nilai": str(b.nonce)},
+            ])
+            st.json(b.transactions)
+    if len(bc.chain) > len(shown):
+        st.caption(f"Menampilkan 5 blok terbaru dari {len(bc.chain)}.")
+
+    with st.expander("Simulasi manipulasi data"):
+        st.caption("Ubah jumlah di blok lama, lalu klik Periksa integritas.")
+        if len(bc.chain) > 1:
+            idx = st.number_input("Nomor blok", min_value=1, max_value=len(bc.chain) - 1, value=1, key="bc_tamper_idx")
+            fake = st.number_input("Jumlah palsu", value=999999.0, key="bc_tamper_amt")
+            if st.button("Manipulasi blok", key="btn_inject_tamper"):
+                bc.tamper_block_for_demo(idx, fake)
+                st.warning(f"Blok #{idx} diubah. Jalankan pemeriksaan integritas.")
+        else:
+            st.caption("Tambang minimal 1 blok dulu.")
+
+
+def tab_rahasia():
+    page_head("Data rahasia", "Disimpan terenkripsi AES-256-GCM di database.")
+    key = st.session_state.master_session_key or "SentixDefaultMasterKey"
+
+    with st.expander("Tambah data rahasia"):
+        title = st.text_input("Judul", "Catatan Rahasia", key="db_rec_title")
+        cat = st.selectbox("Kategori", ["SEED_PHRASE", "PRIVATE_KEY", "LEGAL_CONTRACT", "FINANCIAL_MEMO"], key="db_rec_cat")
+        secret = st.text_area("Isi rahasia", "", key="db_rec_secret")
+        if st.button("Simpan terenkripsi", use_container_width=True, type="primary", key="btn_save_db_rec"):
+            if title and secret:
+                rid = insert_secret(title, cat, secret, key)
+                st.success(f"Tersimpan dengan ID #{rid}.")
+                st.rerun()
+            else:
+                st.error("Judul dan isi wajib diisi.")
+
+    view = seg(["Data rahasia", "Tampilan teknis"], "db_view_toggle", "Tampilan")
+
+    if view == "Data rahasia":
+        records = get_all_secrets_decrypted(key)
+        if not records:
+            st.info("Belum ada data.")
+        for r in records:
+            with st.container(border=True):
+                c1, c2 = st.columns([4, 1])
+                with c1:
+                    st.markdown(f"**{r['title']}** &nbsp; {pill(r['category'], 'wait')}", unsafe_allow_html=True)
+                    st.caption(f"ID {r['id']} · {r['created_at']} · {r['decryption_status']}")
+                    st.code(r["decrypted_secret"], language="text")
+                with c2:
+                    if st.button("Hapus", key=f"del_{r['id']}", use_container_width=True):
+                        delete_record(r["id"])
+                        st.rerun()
+    else:
+        st.caption("Isi tabel `vault_records` di disk (ciphertext).")
+        raws = get_raw_database_records()
+        if raws:
+            st.table(raws)
+        else:
+            st.info("Database masih kosong.")
+
+
+def render_main_dashboard():
+    try:
+        c1, c2 = st.columns([3, 1], vertical_alignment="center")
+    except TypeError:  # Streamlit versi lama
+        c1, c2 = st.columns([3, 1])
+    with c1:
+        st.markdown(
+            "<div class='brand'><div class='logo'>🔐</div><div>"
+            "<div class='name'>Sentix Digital Vault</div>"
+            f"<div class='muted'>{pill('● Sesi aktif', 'ok')} &nbsp;{officer_name()[:28]}</div>"
+            "</div></div>",
+            unsafe_allow_html=True,
         )
-        st.markdown("<br>", unsafe_allow_html=True)
+    with c2:
+        if st.button("Kunci vault", use_container_width=True, key="btn_logout_main"):
+            reset_auth()
+            st.rerun()
 
-        if nav_choice.startswith("1."):
+    t1, t2, t3, t4, t5 = st.tabs(["Pesan", "File", "Gambar", "Aset", "Rahasia"])
+    with t1:
+        tab_pesan()
+    with t2:
+        tab_file()
+    with t3:
+        tab_gambar()
+    with t4:
+        tab_aset()
+    with t5:
+        tab_rahasia()
+
+
+# =====================================================================
+# ROUTING
+# =====================================================================
+def main():
+    try:
+        init_database()
+    except Exception:
+        pass
+
+    if not st.session_state.authenticated:
+        st.markdown(
+            "<div class='hero'><div class='logo'>🔐</div>"
+            "<h1>Sentix Digital Vault</h1>"
+            "<p>Brankas digital dengan verifikasi 3 lapis</p></div>",
+            unsafe_allow_html=True,
+        )
+
+        _, mid, _ = st.columns([1, 4, 1])
+        with mid:
+            nav = seg(["Masuk", "Registrasi", "Developer"], "top_flow_nav", "Menu")
+
+        if nav == "Masuk":
             render_login_flow()
-        elif nav_choice.startswith("2."):
+        elif nav == "Registrasi":
             render_registration_flow()
         else:
             render_developer_flow()
-
     else:
         render_main_dashboard()
 
