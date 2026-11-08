@@ -36,11 +36,18 @@ class DongleVerifier:
     """
 
     @staticmethod
-    def generate_dongle_token(vault_id: str = "VAULT-ALPHA-01", holder_name: str = "Oktavian Prasetya Adi (123240135)") -> dict:
+    def generate_dongle_token(vault_id: str = "VAULT-ALPHA-01", holder_name: str = "Oktavian Prasetya Adi (123240135)", user_id: str | None = None) -> dict:
         """Generates a cryptographic token payload signed with HMAC-SHA256."""
+        inferred_uid = user_id
+        if not inferred_uid and "-" in vault_id:
+            inferred_uid = vault_id.split("-", 1)[1].lower()
+        if not inferred_uid:
+            inferred_uid = "oktavian"
+
         payload = {
             "vault_id": vault_id,
             "issued_to": holder_name,
+            "user_id": inferred_uid,
             "institution": "UPN Veteran Yogyakarta - Informatika IF-B",
             "device_role": "HARDWARE_SECURITY_DONGLE_TIER_1",
             "issued_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
@@ -48,6 +55,28 @@ class DongleVerifier:
         raw_msg = json.dumps(payload, sort_keys=True).encode("utf-8")
         signature = hmac.new(SYSTEM_VAULT_SALT, raw_msg, hashlib.sha256).hexdigest()
         return {"payload": payload, "signature": signature}
+
+    @classmethod
+    def resolve_user_id_from_payload(cls, payload: dict) -> str | None:
+        """Resolves the canonical user_id bound to a verified dongle payload."""
+        if not payload:
+            return None
+        if "user_id" in payload and payload["user_id"]:
+            return str(payload["user_id"]).lower()
+        vault_id = payload.get("vault_id", "")
+        if "-" in vault_id:
+            return vault_id.split("-", 1)[1].lower()
+        issued_to = payload.get("issued_to", "").lower()
+        if AUTH_CONFIG_PATH.exists():
+            try:
+                with open(AUTH_CONFIG_PATH, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                for uid, acc in data.get("accounts", {}).items():
+                    if acc.get("full_name", "").lower() == issued_to or uid.lower() == issued_to:
+                        return uid.lower()
+            except Exception:
+                pass
+        return None
 
     @classmethod
     def write_dongle_to_path(cls, target_dir: Path | str, vault_id: str = "VAULT-ALPHA-01", holder_name: str = "Oktavian Prasetya Adi (123240135)") -> Path:
@@ -448,10 +477,18 @@ class BiometricVerifier:
         return False
 
     @classmethod
-    def verify_face(cls, probe_image: Image.Image, threshold: float = 0.32, check_liveness: bool = False, **kwargs) -> tuple[bool, float, str]:
-        """Compares probe_image against ALL enrolled faces in the multi-face roster with Anti-Spoofing.
+    def verify_face(
+        cls,
+        probe_image: Image.Image,
+        threshold: float = 0.32,
+        check_liveness: bool = False,
+        expected_user_id: str | None = None,
+        **kwargs
+    ) -> tuple[bool, float, str]:
+        """Compares probe_image against enrolled faces with Anti-Spoofing.
         Calculates Cosine Distance: Distance = 1 - (A · B).
-        Supports optional check_liveness and forwards any custom kwargs safely.
+        If expected_user_id is provided, strictly enforces that the face matches the officer
+        bound to the presented USB Hardware Dongle (Prevents Cross-Credential Identity Mismatch).
         Returns: (is_matched, min_distance, message)
         """
         roster = cls._load_roster()
@@ -464,7 +501,34 @@ class BiometricVerifier:
             return False, 1.0, f"Biometrik Ditolak: {liveness['reason']}"
 
         probe_emb = cls._extract_simple_embedding(probe_image)
+        live_tag = f" | Liveness: {liveness['liveness_score']}%" if liveness["is_live"] else ""
 
+        # Enforce Identity Binding if expected_user_id is supplied
+        if expected_user_id:
+            matched_candidates = [
+                f for f in roster if f.get("user_id", "").lower() == expected_user_id.lower()
+            ]
+            if not matched_candidates:
+                matched_candidates = [
+                    f for f in roster if expected_user_id.lower() in f.get("name", "").lower()
+                ]
+
+            if matched_candidates:
+                candidate = matched_candidates[0]
+                cand_emb = candidate["embedding"]
+                dot_product = sum(a * b for a, b in zip(cand_emb, probe_emb))
+                cosine_distance = min(1.0, round(max(0.0, 1.0 - dot_product), 4))
+                candidate_name = candidate.get("name", expected_user_id)
+                confidence = round(max(0.0, (1.0 - cosine_distance)) * 100, 2)
+
+                if cosine_distance <= threshold:
+                    return True, cosine_distance, f"Biometrik Terverifikasi: {candidate_name} (Confidence: {confidence}%, Dist: {cosine_distance:.4f}{live_tag})"
+                else:
+                    return False, cosine_distance, f"Biometrik Ditolak: Wajah tidak cocok dengan pemilik kunci USB ({candidate_name}). Dist: {cosine_distance:.4f} > {threshold}. Identitas faktor fisik (kunci) dan biometrik (wajah) tidak sinkron!"
+            else:
+                return False, 1.0, f"Biometrik Ditolak: Pemilik kunci USB ({expected_user_id}) belum memiliki rekaman wajah di brankas."
+
+        # Fallback to multi-face scanning if no expected_user_id is specified
         best_match = None
         min_distance = 1.0
 
@@ -476,8 +540,6 @@ class BiometricVerifier:
             if cosine_distance < min_distance:
                 min_distance = cosine_distance
                 best_match = candidate
-
-        live_tag = f" | Liveness: {liveness['liveness_score']}%" if liveness["is_live"] else ""
 
         if min_distance <= threshold and best_match:
             matched_name = best_match.get("name", best_match["user_id"])
@@ -577,18 +639,32 @@ class PasswordVerifier:
 
         accounts = data.get("accounts", {})
 
-        # If specific username requested
-        if username and username in accounts:
-            stored_hash = accounts[username]["password_hash"]
-            salt = bytes.fromhex(accounts[username]["salt_hex"])
-            computed_hash = hashlib.pbkdf2_hmac(
-                "sha256", password.encode("utf-8"), salt, PBKDF2_ITERATIONS, dklen=32
-            ).hex()
-            if hmac.compare_digest(stored_hash, computed_hash):
-                master_key_hex = hashlib.sha256(password.encode("utf-8") + salt).hexdigest()
-                return True, f"Autentikasi Berhasil ({accounts[username].get('full_name', username)})", master_key_hex
+        # If specific username requested, enforce strict identity binding
+        if username:
+            matched_user = None
+            if username in accounts:
+                matched_user = username
+            else:
+                for u, acc in accounts.items():
+                    if u.lower() == str(username).lower() or acc.get("full_name", "").lower() == str(username).lower():
+                        matched_user = u
+                        break
 
-        # Check default master account
+            if matched_user:
+                stored_hash = accounts[matched_user]["password_hash"]
+                salt = bytes.fromhex(accounts[matched_user]["salt_hex"])
+                computed_hash = hashlib.pbkdf2_hmac(
+                    "sha256", password.encode("utf-8"), salt, PBKDF2_ITERATIONS, dklen=32
+                ).hex()
+                if hmac.compare_digest(stored_hash, computed_hash):
+                    master_key_hex = hashlib.sha256(password.encode("utf-8") + salt).hexdigest()
+                    return True, f"Autentikasi Berhasil ({accounts[matched_user].get('full_name', matched_user)})", master_key_hex
+                else:
+                    return False, f"Password tidak cocok untuk akun pemilik kunci ({accounts[matched_user].get('full_name', matched_user)}).", None
+            else:
+                return False, f"Akun petugas '{username}' tidak ditemukan pada sistem brankas.", None
+
+        # Fallback only when username is NOT specified (single-credential / test compatibility)
         if "password_hash" in data and "salt_hex" in data:
             stored_hash = data["password_hash"]
             salt = bytes.fromhex(data["salt_hex"])

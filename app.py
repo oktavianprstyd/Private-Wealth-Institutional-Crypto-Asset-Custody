@@ -233,6 +233,8 @@ def render_flash_injector():
 # =====================================================================
 DEFAULTS = {
     "dongle_verified": False,
+    "dongle_user_id": None,
+    "dongle_holder_name": None,
     "biometric_verified": False,
     "authenticated_officer": "N/A",
     "password_verified": False,
@@ -348,9 +350,14 @@ def render_login_flow():
                 if raw_bytes is None:
                     st.error("Colokkan flashdisk berisi file kunci atau unggah file kunci manual.")
                 else:
-                    ok, msg, _ = DongleVerifier.verify_dongle_token(raw_bytes)
+                    ok, msg, payload = DongleVerifier.verify_dongle_token(raw_bytes)
                     if ok:
+                        uid = DongleVerifier.resolve_user_id_from_payload(payload)
+                        holder = (payload or {}).get("issued_to", "Petugas Terotorisasi")
                         st.session_state.dongle_verified = True
+                        st.session_state.dongle_user_id = uid
+                        st.session_state.dongle_holder_name = holder
+                        st.session_state.authenticated_officer = holder
                         st.rerun()
                     else:
                         st.error(f"Kunci tidak valid: {msg}")
@@ -359,6 +366,8 @@ def render_login_flow():
             card_head("Pengujian Cepat", "Bypass Evaluasi Dosen", "Gunakan opsi ini jika ingin langsung melihat seluruh modul cold wallet.")
             if st.button("Masuk Langsung (Mode Evaluasi)", use_container_width=True, key="btn_skip_step1"):
                 st.session_state.dongle_verified = True
+                st.session_state.dongle_user_id = "oktavian"
+                st.session_state.dongle_holder_name = "Oktavian Prasetya Adi (123240135)"
                 st.session_state.biometric_verified = True
                 st.session_state.password_verified = True
                 st.session_state.authenticated_officer = "Oktavian Prasetya Adi (123240135)"
@@ -368,11 +377,14 @@ def render_login_flow():
 
     # ---------- Langkah 2: Biometrik Wajah 128-D ----------
     elif current == 2:
+        target_uid = st.session_state.get("dongle_user_id")
+        target_holder = st.session_state.get("dongle_holder_name") or "Petugas Terotorisasi"
+
         with st.container(border=True):
             card_head(
                 "Langkah 2 dari 3",
                 "Biometrik Wajah 128-D",
-                "Verifikasi kecocokan wajah terhadap rekaman petugas dengan proteksi liveness anti-spoofing.",
+                f"Kunci USB terikat pada: <b style='color:#E6EAF2'>{target_holder}</b>. Wajah di depan kamera wajib cocok dengan pemilik kunci.",
             )
 
             cam = st.camera_input("Kamera Biometrik", key="cam_login_input", label_visibility="collapsed")
@@ -382,7 +394,9 @@ def render_login_flow():
                 if st.session_state.last_cam_hash != h:
                     st.session_state.last_cam_hash = h
                     img_input = Image.open(cam)
-                    ok, dist, msg = BiometricVerifier.verify_face(img_input, check_liveness=True)
+                    ok, dist, msg = BiometricVerifier.verify_face(
+                        img_input, check_liveness=True, expected_user_id=target_uid
+                    )
                     liv_data = BiometricVerifier.analyze_liveness(img_input)
                     st.session_state.biometric_verified = ok
                     st.session_state.authenticated_officer = msg
@@ -400,7 +414,9 @@ def render_login_flow():
                     if st.session_state.last_up_hash != uh:
                         st.session_state.last_up_hash = uh
                         img_up = Image.open(up_face)
-                        ok, dist, msg = BiometricVerifier.verify_face(img_up, check_liveness=True)
+                        ok, dist, msg = BiometricVerifier.verify_face(
+                            img_up, check_liveness=True, expected_user_id=target_uid
+                        )
                         liv_data = BiometricVerifier.analyze_liveness(img_up)
                         st.session_state.biometric_verified = ok
                         st.session_state.authenticated_officer = msg
@@ -429,24 +445,29 @@ def render_login_flow():
         with c1:
             if st.button("← Ganti Kunci USB", use_container_width=True, key="btn_rst_dongle"):
                 st.session_state.dongle_verified = False
+                st.session_state.dongle_user_id = None
+                st.session_state.dongle_holder_name = None
                 st.rerun()
         with c2:
             if st.button("Bypass Langkah Biometrik", use_container_width=True, key="btn_skip_step2"):
                 st.session_state.biometric_verified = True
-                st.session_state.authenticated_officer = "Oktavian Prasetya Adi (123240135)"
+                st.session_state.authenticated_officer = st.session_state.get("dongle_holder_name") or "Oktavian Prasetya Adi (123240135)"
                 st.rerun()
 
     # ---------- Langkah 3: Password / PIN PBKDF2 ----------
     else:
+        target_uid = st.session_state.get("dongle_user_id")
+        target_holder = st.session_state.get("dongle_holder_name") or officer_name()
+
         with st.container(border=True):
-            card_head("Langkah 3 dari 3", "Master Passphrase / PIN", "Derivasi kunci enkripsi menggunakan PBKDF2-HMAC-SHA256 (100.000 iterasi).")
+            card_head("Langkah 3 dari 3", "Master Passphrase / PIN", f"Masukkan passphrase untuk petugas: <b style='color:#E6EAF2'>{target_holder}</b>")
             st.markdown(
-                f"<div class='muted'>Petugas Terverifikasi: <b style='color:#E6EAF2'>{officer_name()}</b></div>",
+                f"<div class='muted'>Petugas Terverifikasi: <b style='color:#E6EAF2'>{target_holder}</b></div>",
                 unsafe_allow_html=True,
             )
             pwd = st.text_input("Master Passphrase / PIN Kustodi", type="password", key="master_pwd_input")
             if st.button("Buka Workstation Cold Custody", use_container_width=True, type="primary", key="btn_unlock_vault"):
-                ok, msg, master_key = PasswordVerifier.verify_password(pwd)
+                ok, msg, master_key = PasswordVerifier.verify_password(pwd, username=target_uid)
                 if ok:
                     st.session_state.password_verified = True
                     st.session_state.master_session_key = master_key
@@ -523,7 +544,7 @@ def render_registration_flow():
                     BiometricVerifier.enroll_face(face_source, user_id=reg_uid, name=reg_name)
                     PasswordVerifier.register_account(reg_uid, reg_name, reg_pwd1)
                     token = DongleVerifier.generate_dongle_token(
-                        vault_id=f"VAULT-{reg_uid.upper()}", holder_name=reg_name
+                        vault_id=f"AEGIS-{reg_uid.upper()}", holder_name=reg_name, user_id=reg_uid
                     )
                     st.session_state.latest_registered_dongle = json.dumps(token, indent=2).encode("utf-8")
                     st.session_state.registration_success_info = f"Petugas {reg_name} ({reg_uid}) berhasil didaftarkan."

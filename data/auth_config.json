@@ -34,12 +34,12 @@
     },
     "123": {
       "username": "123",
-      "full_name": "GW nyoba",
-      "password_hash": "09d9496927995ea3370e1a9016bedb8230445088245566a0aa3f2473d4a169b7",
-      "salt_hex": "39c5edab44b5f21d24d4b6e8e3062966",
+      "full_name": "uji brutal",
+      "password_hash": "c3aab6f9a420529dd025c96d69595bf488deba1427dfd81270f4fe0b94e1bdd0",
+      "salt_hex": "cdcd1c19489c4038573e68367c36c344",
       "iterations": 100000,
       "algorithm": "PBKDF2-HMAC-SHA256",
-      "registered_at": "2026-11-08 13:15:06 UTC"
+      "registered_at": "2026-11-08 16:07:07 UTC"
     },
     "1234": {
       "username": "1234",
