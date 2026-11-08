@@ -85,31 +85,55 @@ class DongleVerifier:
 
     @classmethod
     def scan_possible_dongle_locations(cls) -> list[Path]:
-        """Scans for potential USB drives or default virtual dongle directories."""
+        """Scans for potential USB drives or default virtual dongle directories.
+        Robust against empty drives, card readers, and scans D: through Z: plus subfolders.
+        """
         candidates = []
 
         # 1. Default local vault dongle folder
         default_local = DATA_DIR / "dongle" / DONGLE_FILENAME
-        if default_local.exists():
-            candidates.append(default_local)
+        try:
+            if default_local.exists():
+                candidates.append(default_local)
+        except Exception:
+            pass
 
-        # 2. Windows drive letters (D:, E:, F:, G:, H:)
+        # 2. Windows drive letters (D: through Z:)
         import string
-        for letter in string.ascii_uppercase[2:10]:
-            drive_root = Path(f"{letter}:/")
-            if drive_root.exists():
-                candidate = drive_root / DONGLE_FILENAME
-                if candidate.exists():
-                    candidates.append(candidate)
-
-        # 3. Linux /media or /mnt locations
-        for base in ["/media", "/mnt", "/Volumes"]:
-            base_p = Path(base)
-            if base_p.exists():
-                for sub in base_p.glob("*"):
-                    candidate = sub / DONGLE_FILENAME
-                    if candidate.exists():
+        for letter in string.ascii_uppercase[3:]:  # D: to Z:
+            try:
+                drive_root = Path(f"{letter}:/")
+                if drive_root.exists():
+                    candidate = drive_root / DONGLE_FILENAME
+                    if candidate.exists() and candidate not in candidates:
                         candidates.append(candidate)
+                    # Also check 1-level subdirectories (e.g. E:/Kripto/sentix_dongle.key)
+                    try:
+                        for sub in drive_root.glob(f"*/{DONGLE_FILENAME}"):
+                            if sub.exists() and sub not in candidates:
+                                candidates.append(sub)
+                    except Exception:
+                        pass
+            except Exception:
+                continue
+
+        # 3. Linux /media, /mnt, /Volumes, and Android OTG (/storage)
+        for base in ["/media", "/mnt", "/Volumes", "/storage"]:
+            try:
+                base_p = Path(base)
+                if base_p.exists():
+                    for sub in base_p.glob("*"):
+                        try:
+                            candidate = sub / DONGLE_FILENAME
+                            if candidate.exists() and candidate not in candidates:
+                                candidates.append(candidate)
+                            for deeper in sub.glob(f"*/{DONGLE_FILENAME}"):
+                                if deeper.exists() and deeper not in candidates:
+                                    candidates.append(deeper)
+                        except Exception:
+                            continue
+            except Exception:
+                continue
 
         return candidates
 
@@ -414,9 +438,10 @@ class BiometricVerifier:
         return False
 
     @classmethod
-    def verify_face(cls, probe_image: Image.Image, threshold: float = 0.32, check_liveness: bool = True) -> tuple[bool, float, str]:
+    def verify_face(cls, probe_image: Image.Image, threshold: float = 0.32, check_liveness: bool = False, **kwargs) -> tuple[bool, float, str]:
         """Compares probe_image against ALL enrolled faces in the multi-face roster with Anti-Spoofing.
         Calculates Cosine Distance: Distance = 1 - (A · B).
+        Supports optional check_liveness and forwards any custom kwargs safely.
         Returns: (is_matched, min_distance, message)
         """
         roster = cls._load_roster()

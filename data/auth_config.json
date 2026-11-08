@@ -22,6 +22,15 @@
       "iterations": 100000,
       "algorithm": "PBKDF2-HMAC-SHA256",
       "registered_at": "2026-11-06 17:48:10 UTC"
+    },
+    "nyoba": {
+      "username": "nyoba",
+      "full_name": "Okta nyoba",
+      "password_hash": "e4d24600638608bedc0b8afddcd4bb7b3b913cb411f5891e92e23ee2f8fbac73",
+      "salt_hex": "af8da45015531cb3d2355e735184b41a",
+      "iterations": 100000,
+      "algorithm": "PBKDF2-HMAC-SHA256",
+      "registered_at": "2026-11-08 11:18:39 UTC"
     }
   }
 }
