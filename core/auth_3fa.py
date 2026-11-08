@@ -60,15 +60,27 @@ class DongleVerifier:
         return target_path
 
     @classmethod
-    def verify_dongle_path(cls, dongle_file_path: Path | str) -> tuple[bool, str, dict | None]:
-        """Verifies if the specified dongle key file exists and has an authentic HMAC signature."""
-        path = Path(dongle_file_path)
-        if not path.exists():
-            return False, f"Hardware Dongle tidak ditemukan di: {path}", None
-
+    def verify_dongle_token(cls, token_input: bytes | str | dict | Path) -> tuple[bool, str, dict | None]:
+        """Verifies if the specified dongle token (bytes, str, Path, or dict) has an authentic HMAC signature."""
         try:
-            with open(path, "r", encoding="utf-8") as f:
-                token_data = json.load(f)
+            if isinstance(token_input, bytes):
+                token_data = json.loads(token_input.decode("utf-8"))
+            elif isinstance(token_input, Path):
+                if not token_input.exists():
+                    return False, f"Hardware Dongle tidak ditemukan di: {token_input}", None
+                with open(token_input, "r", encoding="utf-8") as f:
+                    token_data = json.load(f)
+            elif isinstance(token_input, str):
+                p = Path(token_input)
+                if p.exists() and p.is_file():
+                    with open(p, "r", encoding="utf-8") as f:
+                        token_data = json.load(f)
+                else:
+                    token_data = json.loads(token_input)
+            elif isinstance(token_input, dict):
+                token_data = token_input
+            else:
+                return False, "Format token dongle tidak dikenali.", None
 
             payload = token_data.get("payload", {})
             signature = token_data.get("signature", "")
@@ -81,7 +93,12 @@ class DongleVerifier:
             else:
                 return False, "Hardware Dongle Ditolak (Rejected): Tanda tangan HMAC tidak cocok (Dongle palsu/dimanipulasi)", None
         except Exception as e:
-            return False, f"Gagal membaca dongle: {str(e)}", None
+            return False, f"Gagal membaca token dongle: {str(e)}", None
+
+    @classmethod
+    def verify_dongle_path(cls, dongle_file_path: Path | str) -> tuple[bool, str, dict | None]:
+        """Verifies if the specified dongle key file exists and has an authentic HMAC signature."""
+        return cls.verify_dongle_token(Path(dongle_file_path))
 
     @classmethod
     def scan_possible_dongle_locations(cls) -> list[Path]:
@@ -230,16 +247,16 @@ class BiometricVerifier:
         sobel_x = np.abs(gray[:, 2:] - gray[:, :-2]) if gray.shape[1] > 2 else np.zeros((1, 1))
         col_edge_max = float(np.max(np.mean(sobel_x, axis=0))) if sobel_x.size > 0 else 0.0
 
-        # Decision rules
-        is_dark = mean_lux < 15.0
-        is_overexposed = mean_lux > 240.0
-        is_non_skin_spoof = skin_ratio < 0.10
-        is_flat_matte = (0.0 < contrast < 6.0) and not is_dark  # Flat uniform surface / matte paper
+        # Decision rules (Tuned for reliable webcam capture & robust anti-spoofing)
+        is_dark = mean_lux < 12.0
+        is_overexposed = mean_lux > 245.0
+        is_non_skin_spoof = skin_ratio < 0.05
+        is_flat_matte = (0.0 < contrast < 5.0) and not is_dark  # Flat uniform surface / matte paper
 
-        # Screen Replay Attack checks (holding a phone / tablet / screen in front of webcam)
-        is_phone_bezel = col_edge_max > 28.0  # Phone screen bezel border
-        is_screen_glare = (contrast > 58.0 and (specular_ratio > 0.18 or skin_ratio < 0.22))
-        is_insufficient_skin = (skin_ratio < 0.18) and not (contrast == 0.0 and skin_ratio > 0.8)
+        # Screen Replay Attack checks (holding an unnatural screen / digital border in front of camera)
+        is_phone_bezel = (col_edge_max > 85.0 and skin_ratio < 0.12)
+        is_screen_glare = (contrast > 85.0 and specular_ratio > 0.40 and skin_ratio < 0.08)
+        is_insufficient_skin = (skin_ratio < 0.05) and not (contrast == 0.0 and skin_ratio > 0.8)
 
         is_live = True
         reason = "Liveness valid: pantulan flash & kontur 3D kulit terverifikasi."
@@ -248,7 +265,7 @@ class BiometricVerifier:
 
         if is_dark:
             is_live = False
-            reason = "Sensor kamera terlalu gelap atau tertutup shutter. Gunakan tombol 'Ambil foto dengan flash layar'."
+            reason = "Sensor kamera terlalu gelap atau tertutup shutter. Gunakan pencahayaan cukup atau tombol flash layar."
             status = "TOO_DARK"
             score = 10.0
         elif is_overexposed:
@@ -258,27 +275,27 @@ class BiometricVerifier:
             score = 25.0
         elif is_non_skin_spoof:
             is_live = False
-            reason = "Anti-Spoofing Ditolak: Karakteristik pigmen kulit alami tidak terdeteksi (dugaan cetakan kertas / monokrom)."
+            reason = "Anti-Spoofing: Karakteristik pigmen kulit alami tidak terdeteksi (dugaan cetakan kertas / monokrom)."
             status = "SPOOF_NON_SKIN"
             score = 20.0
         elif is_phone_bezel:
             is_live = False
-            reason = "Anti-Spoofing Ditolak: Terdeteksi bingkai bezel layar perangkat digital (Screen Replay Attack terdeteksi)."
+            reason = "Anti-Spoofing: Terdeteksi bingkai bezel layar perangkat digital (Screen Replay Attack terdeteksi)."
             status = "SPOOF_SCREEN_BEZEL"
             score = 15.0
         elif is_screen_glare:
             is_live = False
-            reason = "Anti-Spoofing Ditolak: Terdeteksi backlight layar ponsel & kontras spektral buatan."
+            reason = "Anti-Spoofing: Terdeteksi backlight layar ponsel & kontras spektral buatan."
             status = "SPOOF_SCREEN_GLARE"
             score = 18.0
         elif is_insufficient_skin:
             is_live = False
-            reason = f"Anti-Spoofing Ditolak: Luas proporsi wajah terlalu sempit ({round(skin_ratio*100, 1)}% < 18%). Terdeteksi foto berjarak jauh atau layar ponsel."
+            reason = f"Anti-Spoofing: Luas proporsi wajah terlalu sempit ({round(skin_ratio*100, 1)}% < 5%). Dekatkan wajah ke kamera."
             status = "SPOOF_INSUFFICIENT_COVERAGE"
             score = 22.0
         elif is_flat_matte:
             is_live = False
-            reason = "Anti-Spoofing Ditolak: Citra datar/matte tanpa dinamika pantulan flash wajah."
+            reason = "Anti-Spoofing: Citra datar/matte tanpa dinamika pantulan flash wajah."
             status = "SPOOF_FLAT_SURFACE"
             score = 30.0
         else:

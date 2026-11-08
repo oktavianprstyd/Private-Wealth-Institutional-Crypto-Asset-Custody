@@ -31,6 +31,24 @@
       "iterations": 100000,
       "algorithm": "PBKDF2-HMAC-SHA256",
       "registered_at": "2026-11-08 11:18:39 UTC"
+    },
+    "123": {
+      "username": "123",
+      "full_name": "GW nyoba",
+      "password_hash": "09d9496927995ea3370e1a9016bedb8230445088245566a0aa3f2473d4a169b7",
+      "salt_hex": "39c5edab44b5f21d24d4b6e8e3062966",
+      "iterations": 100000,
+      "algorithm": "PBKDF2-HMAC-SHA256",
+      "registered_at": "2026-11-08 13:15:06 UTC"
+    },
+    "1234": {
+      "username": "1234",
+      "full_name": "Mahasiswa 2 (NIM)",
+      "password_hash": "8a6a833a68f9c2972670b07dfe21f25d6bcb71ee45f578e2a31da3288e61afa9",
+      "salt_hex": "b30eca5ec61b631e36b8ec93c8e3e579",
+      "iterations": 100000,
+      "algorithm": "PBKDF2-HMAC-SHA256",
+      "registered_at": "2026-11-08 14:20:58 UTC"
     }
   }
 }

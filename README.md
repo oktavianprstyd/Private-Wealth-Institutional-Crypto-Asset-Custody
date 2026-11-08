@@ -1,84 +1,90 @@
-# SENTIX DIGITAL VAULT
-### Institutional-Grade Multi-Factor Crypto Custody & Secret Asset Manager
+# AEGIS COLD CUSTODY
+### Air-Gapped BIP-39 Mnemonic Seed Vault & Hardware Key Custodian Workstation
 
 **Tugas Akhir Mata Kuliah Kriptografi**  
-Program Studi Informatika, Mata Kuliah Kriptografi IF H  
-Universitas Pembangunan Nasional "Veteran" Yogyakarta
+Program Studi Informatika, Jurusan Informatika, FTI  
+Universitas Pembangunan Nasional "Veteran" Yogyakarta  
 
-**Anggota Pengembang:**  
-1. Oktavian Prasetya Adi (NIM: 123240135)  
-2. Grace Rianty Butar Butar (NIM: 123240036)
-
----
-
-## 1. Latar Belakang & Arsitektur Sistem
-
-**Sentix Digital Vault** adalah sistem brankas keamanan aset digital tingkat institusi (*institutional cold-storage custody*) yang dirancang untuk melindungi aset bernilai tinggi, *seed phrase*, dokumen audit rahasia, serta rekaman transaksi terdistribusi.
-
-Aplikasi ini mengintegrasikan seluruh materi kuliah Kriptografi (Materi 1–9) ke dalam skenario dunia nyata (*FinTech & Web3 Security*), mencakup autentikasi multi-faktor berbasis perangkat keras fisik, biometrik fisiologis multi-petugas dengan *Synchronized Screen Flash 2 Detik*, super-enkripsi teks, enkripsi berkas berbasis stream, steganografi citra digital, hingga integritas buku besar terdesentralisasi (*blockchain*).
+**Tim Pengembang (Kelompok 3):**  
+1. **Oktavian Prasetya Adi** (NIM: 123240135) — *Security Architecture, 3FA Gatekeeper, Modern Ciphers (Vernam Stream, Block AES-128, RC4, PoW Blockchain, AES-256-GCM AEAD)*  
+2. **Grace Rianty Butar Butar** (NIM: 123240036) — *Frontend Mnemonic UX, Classical Ciphers (Caesar & Vigenère)*  
 
 ---
 
-## 2. Alur Aplikasi: User Flow vs Developer Flow
+## 1. Latar Belakang & Diferensiasi Proyek
 
-Aplikasi membagi alur kerja secara tegas antara pengguna operasional (*User*) dan evaluator akademis (*Developer/Dosen*):
+**Aegis Cold Custody** adalah sistem *cryptographic workstation* kelas institusional yang dirancang dengan prinsip **Air-Gapped Cold Storage** untuk mengamankan aset digital bernilai tinggi, *BIP-39 Mnemonic Recovery Seed Phrase*, berkas *Keystore/Private Key*, serta buku besar transaksi *on-chain*.
+
+Berbeda dari brankas dokumen kantoran biasa, Aegis Cold Custody mengadaptasi arsitektur **Hardware Security Module (HSM)** dan standar industri Web3/FinTech:
+* **Zero-Trust Physical Gatekeeper:** Seluruh workstation terkunci secara fisik dan kriptografis; tidak dapat dibuka tanpa kombinasi token perangkat keras USB, verifikasi biometrik fisiologis, dan *Master Key Derivation*.
+* **BIP-39 Mnemonic Armor:** 12/24 kata pemulihan dompet kripto dilindungi melalui pipeline super-enkripsi multi-lapis klasik dan modern untuk menangkal serangan *memory scraping* maupun pencurian fisik.
+* **Tampilan Terpusat & Intuitif:** Mengusung antarmuka gelap modern (*Centered Card Layout* ~760px) dengan visualisasi tahapan kriptografi, telemetri anti-spoofing, dan metrik kualitas citra steganografi.
+
+---
+
+## 2. Alur Sistem: User Flow vs Developer Flow
 
 ```text
-                                [ SENTIX DIGITAL VAULT ]
-                                           │
-         ┌─────────────────────────────────┼─────────────────────────────────┐
-         ▼                                 ▼                                 ▼
-┌──────────────────┐             ┌──────────────────┐             ┌──────────────────┐
-│  1. USER LOGIN   │             │ 2. USER REGISTER │             │  3. DEV SANDBOX  │
-├──────────────────┤             ├──────────────────┤             ├──────────────────┤
-│ 1. Colok Dongle  │             │ 1. Nama & UserID │             │ 1. Matriks 7     │
-│    USB (HMAC)    │             │                  │             │    Kriteria TA   │
-│ 2. Scan Wajah    │             │ 2. Set Password  │             │ 2. 1-Click Fast  │
-│    (Flash 2s)    │             │    PBKDF2 Hash   │             │    Bypass Demo   │
-│ 3. Master Pwd    │             │ 3. Rekam Wajah   │             │ 3. Inspektur DB  │
-│    (PBKDF2 Key)  │             │    (Flash 2s)    │             │    Cipher SQLite │
-└────────┬─────────┘             │ 4. Unduh Dongle  │             │ 4. Roster Multi  │
-         │                       │    sentix.key    │             │    Face Manager  │
-         ▼                       └────────┬─────────┘             └──────────────────┘
-┌─────────────────────────────────────────┴──────────────────────────────────────────┐
-│                           DASHBOARD UTAMA BRANKAS                                  │
-│ 1. Super-Enkripsi Teks (Vigenère + AES) │ 4. Blockchain Aset Ledger (PoW Mining)   │
-│ 2. File Vault Berkas (Stream RC4)       │ 5. Database Vault Terenkripsi (AES-GCM)  │
-│ 3. Steganografi Citra (Spatial LSB)     │                                          │
-└────────────────────────────────────────────────────────────────────────────────────┘
+                           [ AEGIS COLD CUSTODY ]
+                                      │
+     ┌────────────────────────────────┼────────────────────────────────┐
+     ▼                                ▼                                ▼
+┌──────────────────┐        ┌──────────────────┐        ┌──────────────────────┐
+│  1. MASUK (3FA)  │        │  2. REGISTRASI   │        │ 3. EVALUASI DOSEN    │
+├──────────────────┤        ├──────────────────┤        ├──────────────────────┤
+│ 1. Kunci Fisik   │        │ 1. Data Petugas  │        │ 1. Matriks 7         │
+│    USB (HMAC)    │        │    (User ID)     │        │    Kriteria Dosen    │
+│ 2. Wajah 128-D   │        │ 2. Master PIN    │        │ 2. 1-Click Fast      │
+│    Anti-Spoofing │        │    (PBKDF2 Hash) │        │    Testing Bypass    │
+│ 3. PIN PBKDF2    │        │ 3. Rekam Wajah   │        │ 3. Lab Uji Spoofing  │
+│    Session Key   │        │ 4. Terbitkan Kunci│       │    Foto Layar HP     │
+└────────┬─────────┘        │    USB Dongle    │        │ 4. Inspektur Raw     │
+         │                  └────────┬─────────┘        │    Ciphertext DB     │
+         ▼                           │                  └──────────────────────┘
+┌────────────────────────────────────┴─────────────────────────────────────────┐
+│                     DASHBOARD UTAMA WORKSTATION (5 MODUL)                    │
+│                                                                              │
+│ 1. BIP-39 Mnemonic Seed Armor      │ 4. Cold Ledger (PoW Blockchain)         │
+│    (Caesar ➔ Vigenère ➔ Vernam     │    (SHA-256 Mining + Tamper Simulator)  │
+│     ➔ AES-128 CBC)                 │                                         │
+│ 2. Keystore Vault (Stream RC4)     │ 5. Whitelisted Address Book             │
+│    (Enkripsi Berkas Dompet Biner)  │    (SQLite AES-256-GCM AEAD)            │
+│ 3. Stego Paper Wallet (LSB)        │                                         │
+│    (NFT Camouflage + PSNR/MSE)     │                                         │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### A. Alur Kerja Pengguna (User Flow)
-1. **Registrasi Akun Baru (Onboarding):**
-   - Masukkan Nama Lengkap dan User ID Petugas.
-   - Tentukan Master Password (di-hash dengan fungsi *Salted PBKDF2-HMAC-SHA256* 100.000 iterasi).
-   - Rekam geometri biometrik wajah menggunakan kamera dengan bantuan **Synchronized Screen Flash 2 Detik** (tombol diletakkan tepat di atas tombol Take Photo).
-   - Terbitkan dan unduh berkas kunci fisik `sentix_dongle.key` yang bertanda tangan HMAC-SHA256 ke flashdisk USB.
-2. **Masuk ke Sistem (3FA Gatekeeper):**
-   - **Faktor 1 (Dongle):** Hubungkan flashdisk USB atau unggah berkas `sentix_dongle.key`.
-   - **Faktor 2 (Biometrik):** Posisikan wajah ke webcam $\rightarrow$ klik tombol flash 2 detik $\rightarrow$ sistem otomatis mencocokkan ke roster wajah resmi.
-   - **Faktor 3 (Password):** Masukkan Master Password $\rightarrow$ sistem menurunkan kunci enkripsi sesi (*Master Session Key*) di RAM.
-3. **Operasi Brankas:** Akses penuh ke 5 modul keamanan digital (Super Enkripsi, File Vault, Stegano LSB, Blockchain Ledger, dan Database Vault).
+1. **Registrasi Petugas Kustodi:**
+   - Masukkan identitas resmi petugas kustodi dan User ID.
+   - Tetapkan Master Passphrase (diamankan menggunakan *Salted PBKDF2-HMAC-SHA256* 100.000 iterasi).
+   - Rekam geometri biometrik wajah secara langsung melalui kamera.
+   - Terbitkan dan unduh token hardware `sentix_dongle.key` yang telah ditandatangani secara kriptografis (*HMAC-SHA256 signature*).
+2. **Autentikasi 3FA Gatekeeper (NIST SP 800-63B AAL3):**
+   - **Langkah 1 (What You Have):** Verifikasi keabsahan token HMAC pada flashdisk USB (pemindaian otomatis drive D:–Z: atau unggah file kunci).
+   - **Langkah 2 (Who You Are):** Verifikasi biometrik wajah 128-D Cosine Distance ($\le 0.32$) yang diperkuat dengan **Active Liveness Detection** (deteksi bezel layar smartphone, pantulan cahaya, dan krominansi kulit YCbCr).
+   - **Langkah 3 (What You Know):** Masukkan Master Passphrase untuk menurunkan *Master Session Key* sementara di memori RAM.
+3. **Operasi Brankas Cold Custody:** Akses penuh ke 5 modul cold wallet untuk mengamankan aset kripto institusi.
 
-### B. Alur Pengembang & Sidang Dosen (Developer & Evaluation Flow)
-1. **Matriks Pembuktian Akademis:** Menampilkan tabel pemetaan 7 kriteria tugas akhir langsung terhadap slide silabus perkuliahan (Materi 1–9).
-2. **1-Click Fast Bypass:** Pintasan sekali klik untuk langsung membuka dashboard utama tanpa proses pemindaian berulang saat demonstrasi di depan dosen penguji.
-3. **Inspektur Basis Data Fisik:** Menampilkan isi tabel `vault_records` SQLite dalam bentuk raw ciphertext + nonce + tag untuk membuktikan field penting terenkripsi di harddisk.
-4. **Simulasi Tampering Blockchain:** Uji coba merusak nilai transaksi pada blok yang sudah ditambang untuk membuktikan algoritma deteksi manipulasi otomatis (*tamper alert*).
+### B. Alur Pengembang & Evaluasi Dosen (Developer Flow)
+1. **Matriks 7 Kriteria Dosen:** Tabulasi komprehensif yang memetakan kriteria silabus perkuliahan secara terinci ke fitur cold wallet.
+2. **1-Click Fast Bypass:** Akses langsung ke seluruh modul tanpa perangkat keras fisik untuk mempercepat proses demonstrasi di hadapan dosen penguji.
+3. **Lab Pengujian Anti-Spoofing:** Alat uji skenario peretasan untuk membuktikan bahwa foto statis, hasil cetak, atau tampilan layar HP ditolak oleh sistem.
+4. **Inspektur Basis Data Fisik:** Menampilkan isi fisik tabel `vault_records` di file SQLite dalam bentuk ciphertext mentah, membuktikan data tersimpan terenkripsi di disk.
 
 ---
 
-## 3. Pemenuhan Spesifikasi Kriteria Tugas Akhir
+## 3. Pemenuhan 7 Kriteria Dosen & Rujukan Materi Kuliah
 
-| Kriteria di Slide Dosen | Implementasi Teknis di Sentix Vault | Rujukan Materi Kuliah |
-| :--- | :--- | :--- |
-| **1. Login Biometric & Hanya Hidup dengan Bantuan Dongle** | **Faktor 1:** Kunci fisik USB Flashdisk bertanda tangan HMAC-SHA256.<br>**Faktor 2:** Verifikasi biometrik wajah multi-officer (*Cosine Distance* $\le 0.32$).<br>**Faktor 3:** Master Password. (Aplikasi terkunci total jika dongle/biometrik tidak valid). | Slide Spek & NIST SP 800-63B |
-| **2. Login Menggunakan Algoritma Kriptografi** | Menggunakan algoritma fungsi hash **PBKDF2-HMAC-SHA256** (100.000 iterasi) dengan garam (*salt*) kriptografis 16-byte untuk menghasilkan kunci derivasi master. | **Materi 8:** Algoritma Fungsi Hash Satu-Arah |
-| **3. Pesan Teks Dienkripsi Super Enkripsi (Klasik + Modern)** | **Lapis 1 (Klasik):** Vigenère Cipher (Polialfabetik substitusi ASCII 95).<br>**Lapis 2 (Modern):** AES-256-CBC (*Cipher Block Chaining*) dengan padding PKCS7 dan IV acak. | **Materi 4:** Vigenère Cipher<br>**Materi 6 & 7:** Cipher Blok & AES |
-| **4. Pesan File Dienkripsi Algoritma Beda dari Teks** | Enkripsi berkas biner sembarang (`.pdf`, `.docx`, `.zip`, `.png`) menggunakan **RC4 Stream Cipher** (implementasi byte-level KSA & PRGA). Berbeda fundamental dari AES (Block vs Stream). | **Materi 7:** Contoh Implementasi Stream Cipher (RC4) |
-| **5. Pesan Penting Dienkripsi pada Basis Data** | Basis data SQLite lokal (`sentix_vault.db`) mengamankan field sensitif menggunakan enkripsi terotentikasi **AES-256-GCM** (*Galois/Counter Mode*). | **Materi 6 & 7:** Mode Operasi Modern (AEAD) |
-| **6. Pesan Gambar Diamankan Konsep Steganografi** | Penyisipan pesan rahasia ke dalam bit terendah (*Spatial Domain LSB Substitution*) kanal warna RGB citra digital, dilengkapi perhitungan matematis **PSNR** ($> 50\text{ dB}$) dan **MSE**. | **Materi 9:** Steganografi Citra Digital (*Prisoner's Problem*) |
-| **7. Aset Penting Diamankan Teknologi Blockchain Sederhana** | Buku besar (*ledger*) aset berbasis rantai blok hash SHA-256 terhubung, mekanisme konsensus **Proof-of-Work (PoW)**, dan deteksi otomatis perusakan rantai (*tamper detection*). | **Materi 8:** Fungsi Hash & Blockchain Ledger |
+| No | Kriteria di Silabus Dosen | Implementasi Teknis di Aegis Cold Custody | Rujukan Materi Kuliah |
+| :---: | :--- | :--- | :--- |
+| **1** | **Login Biometrik & USB Dongle Wajib** | **Faktor 1:** Kunci fisik USB Flashdisk bertanda tangan HMAC-SHA256.<br>**Faktor 2:** Verifikasi biometrik wajah 128-D Cosine Distance dengan proteksi Anti-Spoofing.<br>**Faktor 3:** Master Passphrase PBKDF2. | Slide Spek Tugas Akhir & NIST SP 800-63B |
+| **2** | **Login Memakai Algoritma Kriptografi** | Penurunan Master Session Key dari passphrase menggunakan **PBKDF2-HMAC-SHA256** (100.000 iterasi + 16-byte random salt). | **Materi 8:** Algoritma Fungsi Hash Satu-Arah |
+| **3** | **Pesan Teks Dienkripsi Super Enkripsi (Klasik + Modern)** | **Mnemonic Seed Armor:** 12/24 kata BIP-39 diproses melalui pipeline 4-tahap bertingkat:<br>$\text{Caesar} \rightarrow \text{Vigenère} \rightarrow \text{Vernam Stream (XOR)} \rightarrow \text{AES-128-CBC}$. | **Materi 3:** Caesar Cipher<br>**Materi 4:** Vigenère Cipher<br>**Materi 6 & 7:** Vernam & Block Cipher AES |
+| **4** | **Pesan File Dienkripsi Algoritma Beda dari Teks** | **Keystore File Encryptor:** Enkripsi berkas cadangan dompet biner (`.json`, `.dat`, `.key`, `.wallet`) menggunakan **RC4 Stream Cipher** (KSA 256-byte + PRGA), berbeda fundamental dari cipher blok pada teks. | **Materi 7:** Contoh Implementasi Stream Cipher (RC4) |
+| **5** | **Pesan Penting Dienkripsi pada Basis Data** | **Whitelisted Address Book & UTXO Store:** Basis data SQLite mengamankan alamat penarikan dan master key cadangan menggunakan authenticated encryption **AES-256-GCM AEAD** (Field-Level Encryption + 128-bit Auth Tag). | **Materi 6 & 7:** Mode Operasi Modern (AEAD GCM) |
+| **6** | **Pesan Gambar Menggunakan Steganografi** | **Stego Paper Wallet & NFT Camouflage:** Menyembunyikan 12 kata seed phrase ke dalam kanal warna citra digital via **Spatial LSB Substitution**, dilengkapi analisis objektif **PSNR** ($> 65\text{ dB}$) dan **MSE** ($\approx 0$). | **Materi 9:** Steganografi Citra Digital (*Spatial LSB*) |
+| **7** | **Aset Penting Diamankan Blockchain Sederhana** | **Cold Wallet Transaction Ledger:** Rantai blok pencatatan transfer saldo (BTC/ETH/USDT) berbasis hash SHA-256 berantai dengan konsensus **Proof-of-Work (PoW)** serta simulasi deteksi manipulasi (*tamper alert*). | **Materi 8:** Fungsi Hash & Blockchain Ledger |
 
 ---
 
@@ -86,46 +92,46 @@ Aplikasi membagi alur kerja secara tegas antara pengguna operasional (*User*) da
 
 ```text
 sentix-digital-vault/
-├── README.md               # Dokumentasi utama proyek & laporan arsitektur
-├── UI_GUIDE.md             # Panduan pengembang frontend untuk rekan tim
-├── requirements.txt        # Daftar dependensi Python
-├── .gitignore              # Konfigurasi filter repositori Git
-├── app.py                  # Entrypoint antarmuka pengguna interaktif (Streamlit)
-├── config.py               # Konfigurasi konstanta, path, dan parameter kriptografi
+├── README.md               # Dokumentasi utama proyek & arsitektur sistem
+├── requirements.txt        # Daftar dependensi modul Python
+├── run_app.bat             # Launcher otomatis 1-klik untuk Windows
+├── run.bat                 # Shortcut alias launcher cepat
+├── app.py                  # Antarmuka Streamlit (Centered Layout, Cold Wallet Workstation)
+├── config.py               # Konstanta sistem, parameter kriptografi, & direktori
 │
 ├── core/                   # Modul mesin kriptografi backend
 │   ├── __init__.py
-│   ├── auth_3fa.py         # Mesin 3FA: Dongle USB, Biometrik Multi-Face, & PBKDF2
-│   ├── super_encryption.py # Vigenère Cipher (Klasik) + AES-256-CBC (Modern)
-│   ├── file_cipher.py      # RC4 Stream Cipher (KSA & PRGA) untuk berkas
-│   ├── database_vault.py   # Brankas basis data SQLite + AES-256-GCM
-│   ├── steganography.py    # LSB Image Steganography + Analisis Metrik PSNR/MSE
-│   └── blockchain.py       # Rantai Blok Aset PoW + Deteksi Manipulasi Data
+│   ├── auth_3fa.py         # Mesin 3FA: USB Dongle HMAC, Biometrik 128-D + Anti-Spoofing, PBKDF2
+│   ├── super_encryption.py # Pipeline 4-Tahap: Caesar, Vigenère, Vernam XOR, AES-128
+│   ├── file_cipher.py      # Stream Cipher RC4 (KSA & PRGA) untuk berkas keystore
+│   ├── database_vault.py   # Brankas basis data SQLite + Field-Level AES-256-GCM AEAD
+│   ├── steganography.py    # Spatial LSB Steganography + Evaluasi Ilmiah PSNR/MSE
+│   └── blockchain.py       # Rantai Blok Transaksi PoW SHA-256 + Tamper Detection
 │
-├── tests/                  # Pengujian unit otomatis (Automated Unit Tests)
+├── tests/                  # Automated Unit Testing Suite
 │   ├── __init__.py
-│   └── test_crypto_engines.py # Pengujian end-to-end 8 skenario pengujian
+│   └── test_crypto_engines.py # Pengujian end-to-end 10 skenario pengujian
 │
 ├── scripts/                # Perkakas CLI pendukung
-│   ├── generate_dongle.py  # Script pembuat kunci USB Dongle fisik/virtual
-│   └── enroll_face.py      # Script pendaftaran master wajah biometrik
+│   ├── generate_dongle.py  # Script CLI pembuat token kunci USB fisik/virtual
+│   └── enroll_face.py      # Script CLI perekaman embedding biometrik wajah
 │
-└── data/                   # Direktori penyimpanan lokal (DB, kunci, ledger)
+└── data/                   # Penyimpanan lokal terlindungi (Database SQLite, Master Face, Ledger)
 ```
 
 ---
 
 ## 5. Panduan Menjalankan & Pengujian
 
-### ⚡ Cara Termudah (Windows - 1-Klik Langsung Jalan)
-Cukup **klik dua kali berkas `run_app.bat`**.  
+### ⚡ Cara Termudah (Windows — 1-Klik Langsung Jalan)
+Cukup **klik dua kali berkas `run_app.bat`** (atau `run.bat`).  
 Skrip ini akan otomatis mendeteksi Python, menyiapkan *virtual environment*, menginstal seluruh modul kriptografi yang diperlukan, dan langsung membuka aplikasi di peramban Anda.
 
 ---
 
-### Cara Manual (Terminal / Command Line):
+### Cara Manual via Terminal:
 
-### Langkah 1: Siapkan Lingkungan Virtual
+#### 1. Siapkan Lingkungan Virtual
 ```bash
 python -m venv venv
 
@@ -135,19 +141,27 @@ python -m venv venv
 source venv/bin/activate
 ```
 
-### Langkah 2: Pasang Dependensi
+#### 2. Pasang Dependensi
 ```bash
 pip install -r requirements.txt
 ```
 
-### Langkah 3: Jalankan Automated Test Suite
+#### 3. Jalankan Pengujian Unit Otomatis (Automated Tests)
 ```bash
-python tests/test_crypto_engines.py
+python -m unittest tests/test_crypto_engines.py
 ```
-*Output: `Ran 8 tests in 0.298s ... OK`*
+*Output Verifikasi:*
+```text
+..........
+----------------------------------------------------------------------
+Ran 10 tests in 0.443s
 
-### Langkah 4: Jalankan Aplikasi Sentix Vault
+OK
+```
+*(Seluruh 10 skenario pengujian kriptografi, 3FA, Anti-Spoofing, dan Database lulus 100%).*
+
+#### 4. Jalankan Aplikasi
 ```bash
 streamlit run app.py
 ```
-Buka browser pada alamat: `http://localhost:8501`.
+Akses aplikasi melalui peramban di: `http://localhost:8501`.
