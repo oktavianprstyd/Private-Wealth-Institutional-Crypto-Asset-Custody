@@ -12,7 +12,8 @@ import math
 import struct
 from PIL import Image
 
-DELIMITER = "##SNTX##"
+DELIMITER = "##AEGIS##"
+LEGACY_DELIMITER = "##SNTX##"
 
 
 def _bytes_to_bits(data: bytes) -> list[int]:
@@ -90,7 +91,7 @@ def extract_secret_message(stego_image: Image.Image) -> str:
 
     max_safe_len = total_bytes // 8
     if payload_len <= 0 or payload_len > max_safe_len:
-        raise ValueError("No valid Sentix steganography header found in this image.")
+        raise ValueError("No valid Aegis steganography header found in this image.")
 
     # 2. Read remaining payload bits
     target_bits = payload_len * 8
@@ -100,9 +101,12 @@ def extract_secret_message(stego_image: Image.Image) -> str:
     payload_bits = [raw_bytes[32 + i] & 1 for i in range(target_bits)]
     extracted_bytes = _bits_to_bytes(payload_bits)
     delim_bytes = DELIMITER.encode("utf-8")
+    legacy_delim = LEGACY_DELIMITER.encode("utf-8")
 
     if extracted_bytes.endswith(delim_bytes):
         extracted_bytes = extracted_bytes[: -len(delim_bytes)]
+    elif extracted_bytes.endswith(legacy_delim):
+        extracted_bytes = extracted_bytes[: -len(legacy_delim)]
 
     return extracted_bytes.decode("utf-8", errors="replace")
 

@@ -8,16 +8,16 @@
         {
           "tx_id": "04936d19a492cabb5b86d7f54c13c6882443d9a0945cdc7e1feefce8be5081ce",
           "sender": "0000_GENESIS_ROOT",
-          "recipient": "SENTIX_SYSTEM_VAULT",
+          "recipient": "AEGIS_SYSTEM_VAULT",
           "asset": "INITIAL_RESERVE",
           "amount": 1000000.0,
-          "memo": "Sentix Digital Vault Genesis Ledger Initialization",
+          "memo": "Aegis Cold Custody Genesis Ledger Initialization",
           "timestamp": 1793719142.3274698
         }
       ],
       "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "nonce": 2563,
-      "hash": "0002727fd9f0d6809fdd3ed614ae71b3a2741512f7d86956e97a0ce9cfeeae43"
+      "nonce": 97,
+      "hash": "0002279d63f971ee3d480f47348dba6d488ba5e239d8fa6c566ff1ef62f8dcd8"
     },
     {
       "index": 1,
@@ -35,16 +35,16 @@
         {
           "tx_id": "447e4cefc2785e4d5a982269aabdcd262b9c70248cf4ce3b97008d886e257a51",
           "sender": "NETWORK_REWARD",
-          "recipient": "SENTIX_AUDIT_NODE",
-          "asset": "SNTX_GAS",
+          "recipient": "AEGIS_AUDIT_NODE",
+          "asset": "AEGIS_GAS",
           "amount": 10.0,
           "memo": "Block Mining Gas Reward",
           "timestamp": 1793987794.939401
         }
       ],
-      "previous_hash": "0002727fd9f0d6809fdd3ed614ae71b3a2741512f7d86956e97a0ce9cfeeae43",
-      "nonce": 7269,
-      "hash": "000fe397167aa6a4b10d14ae4b23bf1ea55bb421c0f5c8e607b999f4afaf1a49"
+      "previous_hash": "0002279d63f971ee3d480f47348dba6d488ba5e239d8fa6c566ff1ef62f8dcd8",
+      "nonce": 3666,
+      "hash": "0000b54a71af78257bab0b9d028858c5f59f36a33b16215827404ac5b9954f6c"
     },
     {
       "index": 2,
@@ -63,15 +63,15 @@
           "tx_id": "ab607f998e5fe60e093f97a48e05dcb4a43e73bd734c7dfd4b505a2fd194dac1",
           "sender": "NETWORK_REWARD",
           "recipient": "0x123240135_CUSTODY_NODE",
-          "asset": "SNTX_GAS",
+          "asset": "AEGIS_GAS",
           "amount": 10.0,
           "memo": "Block Mining Gas Reward",
           "timestamp": 1794217338.2351222
         }
       ],
-      "previous_hash": "000fe397167aa6a4b10d14ae4b23bf1ea55bb421c0f5c8e607b999f4afaf1a49",
-      "nonce": 12260,
-      "hash": "000c91601be0bd4ef33bc9966096156cba965dddf5a7804e004b6b4942f169b5"
+      "previous_hash": "0000b54a71af78257bab0b9d028858c5f59f36a33b16215827404ac5b9954f6c",
+      "nonce": 7370,
+      "hash": "0005e0c72ff91bdfda7d0a64c06a774ce37de1ea7cc56841f07512318c00e7b9"
     },
     {
       "index": 3,
@@ -90,15 +90,15 @@
           "tx_id": "5f26a103b520788c25e28521db1bfb8fcd8d4602f6dca96b8dfa3b70597ace90",
           "sender": "NETWORK_REWARD",
           "recipient": "0x123240135_CUSTODY_NODE",
-          "asset": "SNTX_GAS",
+          "asset": "AEGIS_GAS",
           "amount": 10.0,
           "memo": "Block Mining Gas Reward",
           "timestamp": 1794233684.3771806
         }
       ],
-      "previous_hash": "000c91601be0bd4ef33bc9966096156cba965dddf5a7804e004b6b4942f169b5",
-      "nonce": 15063,
-      "hash": "000f96518984e0dcef5b3d7aa1276f496a57936b8d91052a398703536b329e1a"
+      "previous_hash": "0005e0c72ff91bdfda7d0a64c06a774ce37de1ea7cc56841f07512318c00e7b9",
+      "nonce": 525,
+      "hash": "0003c83cbd9c7d350dc6343da4701665fb73b92f12d56af4730888e8dd0ab900"
     }
   ]
 }

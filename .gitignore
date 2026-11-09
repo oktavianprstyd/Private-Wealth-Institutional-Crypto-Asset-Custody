@@ -38,6 +38,7 @@ ENV/
 Thumbs.db
 
 # Dynamic Vault Run State (Zero-Raw Storage Enforcement)
+data/aegis_vault.db-journal
 data/sentix_vault.db-journal
 data/*.enc
 data/**/*.key

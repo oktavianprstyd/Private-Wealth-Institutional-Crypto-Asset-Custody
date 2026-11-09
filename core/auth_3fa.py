@@ -18,12 +18,13 @@ try:
     from config import DATA_DIR, DONGLE_FILENAME, MASTER_FACE_PATH, PBKDF2_ITERATIONS
 except ImportError:
     DATA_DIR = Path("data")
-    DONGLE_FILENAME = "sentix_dongle.key"
+    DONGLE_FILENAME = "aegis_dongle.key"
     MASTER_FACE_PATH = Path("data/master_face.json")
     PBKDF2_ITERATIONS = 100_000
 
 AUTH_CONFIG_PATH = DATA_DIR / "auth_config.json"
-SYSTEM_VAULT_SALT = b"SENTIX_SYSTEM_CORE_SALT_2026_UPN"
+SYSTEM_VAULT_SALT = b"AEGIS_SYSTEM_CORE_SALT_2026_UPN"
+LEGACY_VAULT_SALT = b"SENTIX_SYSTEM_CORE_SALT_2026_UPN"
 
 
 # =====================================================================
@@ -32,7 +33,7 @@ SYSTEM_VAULT_SALT = b"SENTIX_SYSTEM_CORE_SALT_2026_UPN"
 
 class DongleVerifier:
     """Manages Physical / Virtual USB Hardware Dongle.
-    Validates presence of 'sentix_dongle.key' with cryptographically verified HMAC signature.
+    Validates presence of 'aegis_dongle.key' with cryptographically verified HMAC signature.
     """
 
     @staticmethod
@@ -115,8 +116,9 @@ class DongleVerifier:
             signature = token_data.get("signature", "")
             raw_msg = json.dumps(payload, sort_keys=True).encode("utf-8")
             expected_sig = hmac.new(SYSTEM_VAULT_SALT, raw_msg, hashlib.sha256).hexdigest()
+            legacy_sig = hmac.new(LEGACY_VAULT_SALT, raw_msg, hashlib.sha256).hexdigest()
 
-            if hmac.compare_digest(signature, expected_sig):
+            if hmac.compare_digest(signature, expected_sig) or hmac.compare_digest(signature, legacy_sig):
                 holder = payload.get("issued_to", "Authorized Holder")
                 return True, f"Hardware Dongle Terverifikasi (HMAC-SHA256 Valid) - {holder}", payload
             else:
@@ -136,6 +138,7 @@ class DongleVerifier:
         ensuring that 'What You Have' authentication requires actual external hardware.
         """
         candidates = []
+        filenames = [DONGLE_FILENAME, "sentix_dongle.key"] if DONGLE_FILENAME != "sentix_dongle.key" else [DONGLE_FILENAME]
 
         # 1. Windows removable and external drive letters (D: through Z:)
         import string
@@ -143,16 +146,17 @@ class DongleVerifier:
             try:
                 drive_root = Path(f"{letter}:/")
                 if drive_root.exists():
-                    candidate = drive_root / DONGLE_FILENAME
-                    if candidate.exists() and candidate not in candidates:
-                        candidates.append(candidate)
-                    # Also check 1-level subdirectories (e.g. E:/Kripto/sentix_dongle.key)
-                    try:
-                        for sub in drive_root.glob(f"*/{DONGLE_FILENAME}"):
-                            if sub.exists() and sub not in candidates:
-                                candidates.append(sub)
-                    except Exception:
-                        pass
+                    for fn in filenames:
+                        candidate = drive_root / fn
+                        if candidate.exists() and candidate not in candidates:
+                            candidates.append(candidate)
+                        # Also check 1-level subdirectories (e.g. E:/Kripto/aegis_dongle.key)
+                        try:
+                            for sub in drive_root.glob(f"*/{fn}"):
+                                if sub.exists() and sub not in candidates:
+                                    candidates.append(sub)
+                        except Exception:
+                            pass
             except Exception:
                 continue
 
@@ -163,12 +167,13 @@ class DongleVerifier:
                 if base_p.exists():
                     for sub in base_p.glob("*"):
                         try:
-                            candidate = sub / DONGLE_FILENAME
-                            if candidate.exists() and candidate not in candidates:
-                                candidates.append(candidate)
-                            for deeper in sub.glob(f"*/{DONGLE_FILENAME}"):
-                                if deeper.exists() and deeper not in candidates:
-                                    candidates.append(deeper)
+                            for fn in filenames:
+                                candidate = sub / fn
+                                if candidate.exists() and candidate not in candidates:
+                                    candidates.append(candidate)
+                                for deeper in sub.glob(f"*/{fn}"):
+                                    if deeper.exists() and deeper not in candidates:
+                                        candidates.append(deeper)
                         except Exception:
                             continue
             except Exception:
@@ -572,12 +577,12 @@ class PasswordVerifier:
         return derived_hash.hex(), salt.hex()
 
     @classmethod
-    def init_master_password(cls, password: str = "Sentix@2026!"):
+    def init_master_password(cls, password: str = "Aegis@2026!"):
         """Sets or resets the master password."""
         AUTH_CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
         hash_hex, salt_hex = cls.hash_password(password)
         data = {
-            "username": "sentix_executive",
+            "username": "aegis_executive",
             "password_hash": hash_hex,
             "salt_hex": salt_hex,
             "iterations": PBKDF2_ITERATIONS,

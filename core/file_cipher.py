@@ -59,13 +59,14 @@ class RC4:
         return bytes(output)
 
 
-MAGIC_HEADER = b"SNTX_RC4_V1\x00"
+MAGIC_HEADER = b"AEGIS_RC4_V1\x00"
+LEGACY_MAGIC_HEADER = b"SNTX_RC4_V1\x00"
 
 
 def encrypt_file_bytes(file_bytes: bytes, original_filename: str, key_passphrase: str) -> bytes:
     """Encrypts arbitrary binary file with RC4 and prepends a self-describing metadata envelope.
     Envelope Format:
-    [12 bytes MAGIC] + [2 bytes filename_len] + [filename_bytes] + [RC4_ciphertext]
+    [13 bytes MAGIC] + [2 bytes filename_len] + [filename_bytes] + [RC4_ciphertext]
     """
     if not key_passphrase:
         raise ValueError("Encryption passphrase cannot be empty.")
@@ -86,7 +87,7 @@ def encrypt_file_bytes(file_bytes: bytes, original_filename: str, key_passphrase
 
 def decrypt_file_bytes(envelope_bytes: bytes, key_passphrase: str) -> tuple[bytes, str]:
     """Decrypts RC4 envelope and extracts (decrypted_file_bytes, original_filename).
-    If envelope lacks Sentix header, falls back to direct raw decryption.
+    If envelope lacks Aegis header, falls back to direct raw decryption.
     """
     if not key_passphrase:
         raise ValueError("Decryption passphrase cannot be empty.")
@@ -98,6 +99,13 @@ def decrypt_file_bytes(envelope_bytes: bytes, key_passphrase: str) -> tuple[byte
 
     if envelope_bytes.startswith(MAGIC_HEADER):
         offset = len(MAGIC_HEADER)
+        (fn_len,) = struct.unpack("!H", envelope_bytes[offset : offset + 2])
+        offset += 2
+        original_filename = envelope_bytes[offset : offset + fn_len].decode("utf-8", errors="replace")
+        offset += fn_len
+        ciphertext = envelope_bytes[offset:]
+    elif envelope_bytes.startswith(LEGACY_MAGIC_HEADER):
+        offset = len(LEGACY_MAGIC_HEADER)
         (fn_len,) = struct.unpack("!H", envelope_bytes[offset : offset + 2])
         offset += 2
         original_filename = envelope_bytes[offset : offset + fn_len].decode("utf-8", errors="replace")

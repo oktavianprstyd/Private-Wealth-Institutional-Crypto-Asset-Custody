@@ -64,7 +64,7 @@ echo.
 echo =====================================================================
 echo  [SUKSES] Seluruh sistem siap! Membuka Aegis Cold Custody di browser...
 echo  Local URL: http://localhost:8501
-echo  Master Password Bawaan: Sentix@2026!
+echo  Master Password Bawaan: Aegis@2026!
 echo.
 echo  (Tutup jendela ini atau tekan Ctrl + C untuk mematikan server)
 echo =====================================================================

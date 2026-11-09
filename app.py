@@ -48,7 +48,7 @@ st.set_page_config(
 )
 
 # =====================================================================
-# STYLE: TEMA DARK MODE INSTITUSIONAL TERPUSAT (SENTIX V3 CLEAN STYLE)
+# STYLE: TEMA DARK MODE INSTITUSIONAL TERPUSAT (AEGIS V3 CLEAN STYLE)
 # =====================================================================
 st.markdown("""
 <style>
@@ -185,19 +185,19 @@ def render_flash_injector():
         function inject() {
             doc.querySelectorAll('[data-testid="stCameraInputButton"]').forEach(function(camBtn) {
                 const parent = camBtn.parentElement;
-                if (!parent || parent.querySelector('.sentix-flash-btn')) return;
+                if (!parent || parent.querySelector('.aegis-flash-btn')) return;
                 const b = doc.createElement('button');
-                b.className = 'sentix-flash-btn';
+                b.className = 'aegis-flash-btn';
                 b.innerHTML = '☀️ Ambil foto dengan flash layar (2s Flash Anti-Spoofing)';
                 b.style.cssText = 'display:block;width:100%;margin:8px 0;padding:12px 16px;' +
                     'background:linear-gradient(135deg, #2563EB, #1D4ED8);color:#fff;border:0;border-radius:10px;' +
                     'font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 4px 12px rgba(37,99,235,0.3);';
                 b.addEventListener('click', function(e) {
                     e.preventDefault(); e.stopPropagation();
-                    let o = doc.getElementById('sentix-flash-screen');
+                    let o = doc.getElementById('aegis-flash-screen');
                     if (!o) {
                         o = doc.createElement('div');
-                        o.id = 'sentix-flash-screen';
+                        o.id = 'aegis-flash-screen';
                         o.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;' +
                             'background:#ffffff;z-index:2147483647;pointer-events:none;' +
                             'display:flex;align-items:center;justify-content:center;transition:opacity .2s ease;';
@@ -220,8 +220,8 @@ def render_flash_injector():
             });
         }
         inject();
-        if (!window.__sentixFlashInterval) {
-            window.__sentixFlashInterval = setInterval(inject, 350);
+        if (!window.__aegisFlashInterval) {
+            window.__aegisFlashInterval = setInterval(inject, 350);
         }
     })();
     </script>

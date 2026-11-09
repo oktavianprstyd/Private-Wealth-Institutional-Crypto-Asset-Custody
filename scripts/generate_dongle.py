@@ -17,7 +17,7 @@ from config import DATA_DIR, DONGLE_FILENAME
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Sentix Digital Vault - Dongle Generator")
+    parser = argparse.ArgumentParser(description="Aegis Cold Custody - Dongle Generator")
     parser.add_argument("--output", "-o", type=str, help="Destination directory (e.g. USB drive letter 'E:/' or path)")
     parser.add_argument("--virtual", action="store_true", help="Generate virtual dongle in local data/dongle directory")
     parser.add_argument("--vault-id", default="VAULT-ALPHA-01", help="Custom Vault Identifier")
@@ -30,7 +30,7 @@ def main():
 
     target_file = DongleVerifier.write_dongle_to_path(target_dir, vault_id=args.vault_id)
     print("=" * 60)
-    print("SENTIX HARDWARE DONGLE GENERATOR")
+    print("AEGIS HARDWARE DONGLE GENERATOR")
     print("=" * 60)
     print(f"[+] Dongle key successfully generated at:")
     print(f"    {target_file.resolve()}")

@@ -128,9 +128,9 @@ class Block:
 class Blockchain:
     """Manages the distributed ledger, pending transactions, and validation."""
 
-    def __init__(self, difficulty: int = DEFAULT_POW_DIFFICULTY, storage_path: Path = BLOCKCHAIN_PATH):
+    def __init__(self, difficulty: int = DEFAULT_POW_DIFFICULTY, storage_path: Path | str = BLOCKCHAIN_PATH):
         self.difficulty = difficulty
-        self.storage_path = storage_path
+        self.storage_path = Path(storage_path)
         self.pending_transactions: list[Transaction] = []
         self.chain: list[Block] = []
 
@@ -144,10 +144,10 @@ class Blockchain:
         """Creates the initial immutable root block (Genesis Block)."""
         genesis_tx = Transaction(
             sender="0000_GENESIS_ROOT",
-            recipient="SENTIX_SYSTEM_VAULT",
+            recipient="AEGIS_SYSTEM_VAULT",
             asset="INITIAL_RESERVE",
             amount=1_000_000.0,
-            memo="Sentix Digital Vault Genesis Ledger Initialization",
+            memo="Aegis Cold Custody Genesis Ledger Initialization",
         )
         genesis_block = Block(
             index=0,
@@ -179,7 +179,7 @@ class Blockchain:
         reward_tx = Transaction(
             sender="NETWORK_REWARD",
             recipient=miner_address,
-            asset="SNTX_GAS",
+            asset="AEGIS_GAS",
             amount=10.0,
             memo="Block Mining Gas Reward",
         )

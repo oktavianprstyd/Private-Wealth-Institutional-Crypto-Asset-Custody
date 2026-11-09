@@ -1,4 +1,4 @@
-"""Comprehensive Test Suite for Sentix Digital Vault Cryptographic Engines
+"""Comprehensive Test Suite for Aegis Cold Custody Cryptographic Engines
 Validates all 6 core requirements from the Final Project Specification:
 1. 3FA Authentication (Dongle USB + Biometric Face + Password Hash)
 2. Super-Encryption (Classical Vigenère + Modern AES-256-CBC)
@@ -26,7 +26,7 @@ from core.steganography import embed_secret_message, extract_secret_message, cal
 from core.blockchain import Blockchain, Transaction, Block
 
 
-class TestSentixCryptoEngines(unittest.TestCase):
+class TestAegisCryptoEngines(unittest.TestCase):
 
     def setUp(self):
         self.test_dir = tempfile.mkdtemp()
@@ -131,7 +131,7 @@ class TestSentixCryptoEngines(unittest.TestCase):
     # -------------------------------------------------------------
     def test_04_super_encryption_roundtrip(self):
         """Test text super-encryption: Plaintext -> Vigenere -> AES -> Plaintext."""
-        secret_text = "Sentix Secret Private Key: 0x9f8b4a72d1e0c354"
+        secret_text = "Aegis Secret Private Key: 0x9f8b4a72d1e0c354"
         classical_key = "UPNVETERAN2026"
         modern_passphrase = "MasterExecutivePassphrase!"
 
@@ -214,7 +214,7 @@ class TestSentixCryptoEngines(unittest.TestCase):
     def test_07_steganography_lsb_roundtrip(self):
         """Test LSB embedding and extraction into RGB image + PSNR metric check."""
         cover = Image.new("RGB", (100, 100), color=(120, 200, 150))
-        secret_message = "SENTIX:TransferAuthorization:Hash=0xABC123"
+        secret_message = "AEGIS:TransferAuthorization:Hash=0xABC123"
 
         stego_img, metrics = embed_secret_message(cover, secret_message)
         self.assertGreater(metrics["psnr_db"], 50.0)  # High imperceptible fidelity

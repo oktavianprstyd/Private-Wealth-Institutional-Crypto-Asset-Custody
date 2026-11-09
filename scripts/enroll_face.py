@@ -16,7 +16,7 @@ from config import MASTER_FACE_PATH
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Sentix Digital Vault - Face Biometric Enrollment")
+    parser = argparse.ArgumentParser(description="Aegis Cold Custody - Face Biometric Enrollment")
     parser.add_argument("--image", "-i", type=str, required=True, help="Path to master face photo (.jpg, .png)")
     parser.add_argument("--user", "-u", default="oktavian", help="User Identifier")
     args = parser.parse_args()
@@ -30,7 +30,7 @@ def main():
         img = Image.open(img_path)
         saved_path = BiometricVerifier.enroll_face(img, user_id=args.user)
         print("=" * 60)
-        print("SENTIX BIOMETRIC ENROLLMENT ENGINE")
+        print("AEGIS BIOMETRIC ENROLLMENT ENGINE")
         print("=" * 60)
         print(f"[+] User ID        : {args.user}")
         print(f"[+] Master Image   : {img_path.resolve()}")

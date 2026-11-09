@@ -15,7 +15,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 try:
     from config import DATABASE_PATH
 except ImportError:
-    DATABASE_PATH = Path("data/sentix_vault.db")
+    DATABASE_PATH = Path("data/aegis_vault.db")
 
 
 def get_db_connection(db_path: Path = DATABASE_PATH) -> sqlite3.Connection:

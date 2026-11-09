@@ -1,1 +1,1 @@
-"""Sentix Digital Vault - Core Cryptographic Engines Package"""
+"""Aegis Cold Custody - Core Cryptographic Engines Package"""

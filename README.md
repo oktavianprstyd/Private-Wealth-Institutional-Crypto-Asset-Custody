@@ -59,7 +59,7 @@ Berbeda dari brankas dokumen kantoran biasa, Aegis Cold Custody mengadaptasi ars
    - Masukkan identitas resmi petugas kustodi dan User ID.
    - Tetapkan Master Passphrase (diamankan menggunakan *Salted PBKDF2-HMAC-SHA256* 100.000 iterasi).
    - Rekam geometri biometrik wajah secara langsung melalui kamera.
-   - Terbitkan dan unduh token hardware `sentix_dongle.key` yang telah ditandatangani secara kriptografis (*HMAC-SHA256 signature*).
+   - Terbitkan dan unduh token hardware `aegis_dongle.key` yang telah ditandatangani secara kriptografis (*HMAC-SHA256 signature*).
 2. **Autentikasi 3FA Gatekeeper (NIST SP 800-63B AAL3):**
    - **Langkah 1 (What You Have):** Verifikasi keabsahan token HMAC pada flashdisk USB (pemindaian otomatis drive D:–Z: atau unggah file kunci).
    - **Langkah 2 (Who You Are):** Verifikasi biometrik wajah 128-D Cosine Distance ($\le 0.32$) yang diperkuat dengan **Active Liveness Detection** (deteksi bezel layar smartphone, pantulan cahaya, dan krominansi kulit YCbCr).
@@ -91,7 +91,7 @@ Berbeda dari brankas dokumen kantoran biasa, Aegis Cold Custody mengadaptasi ars
 ## 4. Struktur Direktori Proyek
 
 ```text
-sentix-digital-vault/
+aegis-cold-custody/
 ├── README.md               # Dokumentasi utama proyek & arsitektur sistem
 ├── requirements.txt        # Daftar dependensi modul Python
 ├── run.bat                 # Launcher otomatis 1-klik untuk Windows (cek dependensi & jalankan)
