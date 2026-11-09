@@ -94,8 +94,7 @@ Berbeda dari brankas dokumen kantoran biasa, Aegis Cold Custody mengadaptasi ars
 sentix-digital-vault/
 ├── README.md               # Dokumentasi utama proyek & arsitektur sistem
 ├── requirements.txt        # Daftar dependensi modul Python
-├── run_app.bat             # Launcher otomatis 1-klik untuk Windows
-├── run.bat                 # Shortcut alias launcher cepat
+├── run.bat                 # Launcher otomatis 1-klik untuk Windows (cek dependensi & jalankan)
 ├── app.py                  # Antarmuka Streamlit (Centered Layout, Cold Wallet Workstation)
 ├── config.py               # Konstanta sistem, parameter kriptografi, & direktori
 │
@@ -124,8 +123,8 @@ sentix-digital-vault/
 ## 5. Panduan Menjalankan & Pengujian
 
 ### ⚡ Cara Termudah (Windows — 1-Klik Langsung Jalan)
-Cukup **klik dua kali berkas `run_app.bat`** (atau `run.bat`).  
-Skrip ini akan otomatis mendeteksi Python, menyiapkan *virtual environment*, menginstal seluruh modul kriptografi yang diperlukan, dan langsung membuka aplikasi di peramban Anda.
+Cukup **klik dua kali berkas `run.bat`**.  
+Skrip ini akan otomatis mendeteksi Python di PATH, memverifikasi dependensi `requirements.txt` (menginstal pustaka yang belum lengkap), dan langsung membuka aplikasi Aegis Cold Custody di browser default (`http://localhost:8501`).
 
 ---
 

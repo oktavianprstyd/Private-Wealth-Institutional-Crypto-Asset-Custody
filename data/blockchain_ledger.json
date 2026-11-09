@@ -45,6 +45,60 @@
       "previous_hash": "0002727fd9f0d6809fdd3ed614ae71b3a2741512f7d86956e97a0ce9cfeeae43",
       "nonce": 7269,
       "hash": "000fe397167aa6a4b10d14ae4b23bf1ea55bb421c0f5c8e607b999f4afaf1a49"
+    },
+    {
+      "index": 2,
+      "timestamp": 1794217338.2351222,
+      "transactions": [
+        {
+          "tx_id": "8501f188d6628734f243a36de73a13eeb3f945d841a3c1494039edaf96301631",
+          "sender": "0x123240135_COLD_CUSTODY",
+          "recipient": "0x71C8364437a5674366B0D5D690EAbc7C3E8d4239",
+          "asset": "BTC",
+          "amount": 2.5,
+          "memo": "Cold reserve liquidity release",
+          "timestamp": 1794217334.5127165
+        },
+        {
+          "tx_id": "ab607f998e5fe60e093f97a48e05dcb4a43e73bd734c7dfd4b505a2fd194dac1",
+          "sender": "NETWORK_REWARD",
+          "recipient": "0x123240135_CUSTODY_NODE",
+          "asset": "SNTX_GAS",
+          "amount": 10.0,
+          "memo": "Block Mining Gas Reward",
+          "timestamp": 1794217338.2351222
+        }
+      ],
+      "previous_hash": "000fe397167aa6a4b10d14ae4b23bf1ea55bb421c0f5c8e607b999f4afaf1a49",
+      "nonce": 12260,
+      "hash": "000c91601be0bd4ef33bc9966096156cba965dddf5a7804e004b6b4942f169b5"
+    },
+    {
+      "index": 3,
+      "timestamp": 1794233684.3771806,
+      "transactions": [
+        {
+          "tx_id": "a1ec5923560a0b145147577457047b7cee1edb3efa8d62b0cfc3590bf5b8c228",
+          "sender": "0x123240135_COLD_CUSTODY",
+          "recipient": "0x71C8364437a5674366B0D5D690EAbc7C3E8d4239",
+          "asset": "BTC",
+          "amount": 2.5,
+          "memo": "Cold reserve liquidity release",
+          "timestamp": 1794233680.0317237
+        },
+        {
+          "tx_id": "5f26a103b520788c25e28521db1bfb8fcd8d4602f6dca96b8dfa3b70597ace90",
+          "sender": "NETWORK_REWARD",
+          "recipient": "0x123240135_CUSTODY_NODE",
+          "asset": "SNTX_GAS",
+          "amount": 10.0,
+          "memo": "Block Mining Gas Reward",
+          "timestamp": 1794233684.3771806
+        }
+      ],
+      "previous_hash": "000c91601be0bd4ef33bc9966096156cba965dddf5a7804e004b6b4942f169b5",
+      "nonce": 15063,
+      "hash": "000f96518984e0dcef5b3d7aa1276f496a57936b8d91052a398703536b329e1a"
     }
   ]
 }

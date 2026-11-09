@@ -1040,7 +1040,7 @@ def main():
             "<div class='hero'><div class='logo'>🛡️</div>"
             "<h1>Aegis Cold Custody</h1>"
             "<p>Air-Gapped BIP-39 Mnemonic Seed Vault & Hardware Key Custodian<br>"
-            "<span style='font-size:12px;color:#64748B;'>UPN \"Veteran\" Yogyakarta · Oktavian Prasetya Adi & Grace Rianty Butar Butar</span></p></div>",
+            "<span style='font-size:12px;color:#64748B;'>Enterprise Multi-Factor Digital Asset Custodian</span></p></div>",
             unsafe_allow_html=True,
         )
 

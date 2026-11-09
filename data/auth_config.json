@@ -49,6 +49,24 @@
       "iterations": 100000,
       "algorithm": "PBKDF2-HMAC-SHA256",
       "registered_at": "2026-11-08 14:20:58 UTC"
+    },
+    "COBA1": {
+      "username": "COBA1",
+      "full_name": "UJI COBA",
+      "password_hash": "1919da5ca92350a2da942214d1e8b7b6a8077c057262c2bc4f05591650d7787d",
+      "salt_hex": "a042cffa68e5e14737b17d72f28a2f22",
+      "iterations": 100000,
+      "algorithm": "PBKDF2-HMAC-SHA256",
+      "registered_at": "2026-11-09 09:26:53 UTC"
+    },
+    "okta123": {
+      "username": "okta123",
+      "full_name": "Oktavian Prasetya",
+      "password_hash": "ff7822a43afb680130b87476133fb402154b9d41607e21540ab3e9ab336c1acb",
+      "salt_hex": "d5fecbc1fc8d9b900ce05cba69c553ee",
+      "iterations": 100000,
+      "algorithm": "PBKDF2-HMAC-SHA256",
+      "registered_at": "2026-11-09 14:13:18 UTC"
     }
   }
 }

@@ -5,11 +5,6 @@ References:
 - Materi 7: Vernam Stream Cipher (Modern Aliran Bitwise XOR)
 - Materi 6 & 7: AES Block Cipher (Modern Blok 128-bit)
 
-Authors & Responsibilities:
-- Tahap 1 (Caesar): Grace Rianty Butar Butar (123240036)
-- Tahap 2 (Vigenère): Grace Rianty Butar Butar (123240036)
-- Tahap 3 (Vernam): Oktavian Prasetya Adi (123240135)
-- Tahap 4 (AES-128): Oktavian Prasetya Adi (123240135)
 """
 
 import base64
@@ -26,7 +21,6 @@ ASCII_RANGE = 95
 
 # =====================================================================
 # TAHAP 1: CAESAR CIPHER (KLASIK MONOALFABETIK)
-# Penanggung Jawab: Grace Rianty Butar Butar (123240036)
 # =====================================================================
 
 class CaesarCipher:
@@ -126,7 +120,6 @@ class CaesarCipher:
 
 # =====================================================================
 # TAHAP 2: VIGENÈRE CIPHER (KLASIK POLIALFABETIK)
-# Penanggung Jawab: Grace Rianty Butar Butar (123240036)
 # =====================================================================
 
 class VigenereCipher:
@@ -231,7 +224,6 @@ class VigenereCipher:
 
 # =====================================================================
 # TAHAP 3: VERNAM STREAM CIPHER (MODERN ALIRAN BITWISE XOR)
-# Penanggung Jawab: Oktavian Prasetya Adi (123240135)
 # =====================================================================
 
 class VernamCipher:
@@ -294,7 +286,6 @@ class VernamCipher:
 
 # =====================================================================
 # TAHAP 4: AES BLOCK CIPHER (MODERN BLOK)
-# Penanggung Jawab: Oktavian Prasetya Adi (123240135)
 # =====================================================================
 
 class AESCBCEngine:
